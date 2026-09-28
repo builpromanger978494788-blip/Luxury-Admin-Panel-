@@ -49,7 +49,7 @@ const DATA_FILE = path.join(APP_DIR, 'data.json');
 // Copy initial data if it doesn't exist in AppData
 try {
   if (!fs.existsSync(DATA_FILE)) {
-    const localData = path.join(__dirname, 'data.json');
+    const localData = path.join(__dirname, 'public', 'data.json');
     if (fs.existsSync(localData)) {
       const dataContent = fs.readFileSync(localData, 'utf8');
       fs.writeFileSync(DATA_FILE, dataContent, 'utf8');
@@ -62,7 +62,7 @@ try {
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve website images for preview in admin
 if (fs.existsSync(WEBSITE_DIR)) {
@@ -91,8 +91,8 @@ app.get('/api/content', (req, res) => {
     let raw;
     if (fs.existsSync(DATA_FILE)) {
       raw = fs.readFileSync(DATA_FILE, 'utf8');
-    } else if (fs.existsSync(path.join(__dirname, 'data.json'))) {
-      raw = fs.readFileSync(path.join(__dirname, 'data.json'), 'utf8');
+    } else if (fs.existsSync(path.join(__dirname, 'public', 'data.json'))) {
+      raw = fs.readFileSync(path.join(__dirname, 'public', 'data.json'), 'utf8');
     } else {
       raw = '{}';
     }

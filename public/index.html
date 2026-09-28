@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture Studio — Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>🏛 Admin Panel</h1>
+      <span>Architecture Studio</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">Overview</div>
+      <button class="sidebar-link active" onclick="showSection('dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </button>
+
+      <div class="sidebar-section-title">Pages</div>
+      <button class="sidebar-link" onclick="showSection('home')">
+        <span class="icon">🏠</span> Home Page
+      </button>
+      <button class="sidebar-link" onclick="showSection('projects')">
+        <span class="icon">📁</span> Projects
+      </button>
+      <button class="sidebar-link" onclick="showSection('about')">
+        <span class="icon">📖</span> About
+      </button>
+      <button class="sidebar-link" onclick="showSection('services')">
+        <span class="icon">🛠️</span> Services
+      </button>
+      <button class="sidebar-link" onclick="showSection('contact')">
+        <span class="icon">📧</span> Contact
+      </button>
+
+      <div class="sidebar-section-title">Global</div>
+      <button class="sidebar-link" onclick="showSection('footer')">
+        <span class="icon">🦶</span> Footer
+      </button>
+      <button class="sidebar-link" onclick="showSection('site')">
+        <span class="icon">⚙️</span> Site Settings
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Header -->
+  <header class="header">
+    <h2 class="header-title" id="headerTitle">Dashboard</h2>
+    <div class="header-actions">
+      <button class="btn btn-success" onclick="publishSite()">
+        🚀 Publish Changes
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="content-area">
+
+      <!-- ═══════ DASHBOARD ═══════ -->
+      <div class="page-section active" id="section-dashboard">
+        <div class="dashboard-grid">
+          <div class="dash-stat">
+            <div class="icon">📁</div>
+            <div class="value" id="dashProjects">0</div>
+            <div class="label">Total Projects</div>
+          </div>
+          <div class="dash-stat">
+            <div class="icon">🛠️</div>
+            <div class="value" id="dashServices">0</div>
+            <div class="label">Services</div>
+          </div>
+          <div class="dash-stat">
+            <div class="icon">📊</div>
+            <div class="value" id="dashStats">0</div>
+            <div class="label">Stats Shown</div>
+          </div>
+          <div class="dash-stat">
+            <div class="icon">📄</div>
+            <div class="value">5</div>
+            <div class="label">Pages</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>🔥 Firebase Status</h3>
+            <span class="badge" id="firebaseStatus" style="background:#fef2f2;color:#ef4444;">Connecting...</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;" id="firebaseMsg">Checking Firebase connection...</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn" onclick="syncToFirebase()">🔄 Sync Local → Firebase</button>
+              <button class="btn" onclick="syncFromFirebase()">📥 Sync Firebase → Local</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Quick Actions</h3>
+          </div>
+          <div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="showSection('home')">Edit Home Page</button>
+            <button class="btn" onclick="showSection('projects')">Manage Projects</button>
+            <button class="btn" onclick="showSection('footer')">Edit Footer</button>
+            <button class="btn btn-success" onclick="publishSite()">🚀 Publish All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ HOME PAGE ═══════ -->
+      <div class="page-section" id="section-home">
+        <div class="section-header">
+          <h2>Home Page</h2>
+        </div>
+
+        <!-- Hero Section -->
+        <div class="card">
+          <div class="card-header"><h3>Hero Section</h3><span class="badge">Above the fold</span></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Badge Text</label>
+                <input type="text" id="hero-badge" placeholder="e.g. Luxury Architecture & Design Studio">
+              </div>
+              <div class="form-group">
+                <label>Highlight Word</label>
+                <input type="text" id="hero-highlight" placeholder="e.g. Inspire">
+              </div>
+              <div class="form-group form-full">
+                <label>Title Line 1</label>
+                <input type="text" id="hero-title" placeholder="e.g. We Design Spaces">
+              </div>
+              <div class="form-group">
+                <label>Primary Button Text</label>
+                <input type="text" id="hero-btn-primary" placeholder="e.g. View Projects">
+              </div>
+              <div class="form-group">
+                <label>Secondary Button Text</label>
+                <input type="text" id="hero-btn-secondary" placeholder="e.g. Contact Us">
+              </div>
+            </div>
+            <div class="form-group" style="margin-top:20px;">
+              <label>Services (shown in subtitle)</label>
+              <div id="hero-services-tags" class="tags-container"></div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <input type="text" id="hero-service-input" placeholder="Add a service..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;">
+                <button class="btn btn-sm btn-primary" onclick="addHeroService()">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="card">
+          <div class="card-header"><h3>Stats Strip</h3><span class="badge">Numbers</span></div>
+          <div class="card-body" id="stats-container"></div>
+        </div>
+
+        <!-- Featured Works -->
+        <div class="card">
+          <div class="card-header"><h3>Featured Works</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Section Label</label>
+                <input type="text" id="featured-label">
+              </div>
+              <div class="form-group">
+                <label>Section Title</label>
+                <input type="text" id="featured-title-line1" placeholder="Line 1">
+              </div>
+              <div class="form-group">
+                <label>Title Emphasis</label>
+                <input type="text" id="featured-title-em" placeholder="Italic word">
+              </div>
+            </div>
+            <h4 style="margin-top:20px;margin-bottom:12px;font-size:0.85rem;color:var(--text-secondary);">Featured Cards</h4>
+            <div id="featured-cards-container"></div>
+          </div>
+        </div>
+
+        <!-- Philosophy -->
+        <div class="card">
+          <div class="card-header"><h3>Philosophy Section</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Label</label>
+                <input type="text" id="phil-label">
+              </div>
+              <div class="form-group">
+                <label>Title Line 1</label>
+                <input type="text" id="phil-title-line1">
+              </div>
+              <div class="form-group">
+                <label>Title Emphasis</label>
+                <input type="text" id="phil-title-em">
+              </div>
+              <div class="form-group form-full">
+                <label>Description</label>
+                <textarea id="phil-text" rows="4"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Process Steps -->
+        <div class="card">
+          <div class="card-header"><h3>Process Steps</h3></div>
+          <div class="card-body">
+            <div class="form-grid" style="margin-bottom:16px;">
+              <div class="form-group">
+                <label>Section Label</label>
+                <input type="text" id="process-label">
+              </div>
+              <div class="form-group">
+                <label>Title Line 1</label>
+                <input type="text" id="process-title-line1">
+              </div>
+              <div class="form-group">
+                <label>Title Emphasis</label>
+                <input type="text" id="process-title-em">
+              </div>
+            </div>
+            <div id="process-steps-container"></div>
+          </div>
+        </div>
+
+        <!-- Testimonial -->
+        <div class="card">
+          <div class="card-header"><h3>Testimonial</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Section Label</label>
+              <input type="text" id="test-label">
+            </div>
+            <div class="form-group">
+              <label>Quote</label>
+              <textarea id="test-quote" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" id="test-author">
+            </div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('home')">💾 Save Home Page</button>
+        </div>
+      </div>
+
+      <!-- ═══════ PROJECTS ═══════ -->
+      <div class="page-section" id="section-projects">
+        <div class="section-header">
+          <h2>Projects</h2>
+          <button class="btn btn-primary" onclick="addProject()">+ Add Project</button>
+        </div>
+        <div id="projects-list"></div>
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('projects')">💾 Save Projects</button>
+        </div>
+      </div>
+
+      <!-- ═══════ ABOUT ═══════ -->
+      <div class="page-section" id="section-about">
+        <div class="section-header"><h2>About Page</h2></div>
+
+        <div class="card">
+          <div class="card-header"><h3>Hero Section</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Section Label</label>
+                <input type="text" id="about-label">
+              </div>
+              <div class="form-group form-full">
+                <label>Lead Text</label>
+                <input type="text" id="about-lead">
+              </div>
+              <div class="form-group form-full">
+                <label>Description Paragraph 1</label>
+                <textarea id="about-text1" rows="3"></textarea>
+              </div>
+              <div class="form-group form-full">
+                <label>Description Paragraph 2</label>
+                <textarea id="about-text2" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>About Stats</h3></div>
+          <div class="card-body" id="about-stats-container"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Principles</h3></div>
+          <div class="card-body">
+            <div class="form-grid" style="margin-bottom:16px;">
+              <div class="form-group">
+                <label>Section Label</label>
+                <input type="text" id="principles-label">
+              </div>
+              <div class="form-group">
+                <label>Title Line 1</label>
+                <input type="text" id="principles-title-line1">
+              </div>
+              <div class="form-group">
+                <label>Title Emphasis</label>
+                <input type="text" id="principles-title-em">
+              </div>
+            </div>
+            <div id="principles-container"></div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('about')">💾 Save About Page</button>
+        </div>
+      </div>
+
+      <!-- ═══════ SERVICES ═══════ -->
+      <div class="page-section" id="section-services">
+        <div class="section-header"><h2>Services Page</h2></div>
+
+        <div class="card">
+          <div class="card-header"><h3>Page Header</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Section Label</label>
+                <input type="text" id="svc-page-label">
+              </div>
+              <div class="form-group">
+                <label>Title Line 1</label>
+                <input type="text" id="svc-page-title-line1">
+              </div>
+              <div class="form-group">
+                <label>Title Emphasis</label>
+                <input type="text" id="svc-page-title-em">
+              </div>
+              <div class="form-group form-full">
+                <label>Description</label>
+                <textarea id="svc-page-desc" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Service Items</h3></div>
+          <div class="card-body" id="services-container"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>CTA Section</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Label</label>
+                <input type="text" id="cta-label">
+              </div>
+              <div class="form-group">
+                <label>Title Line 1</label>
+                <input type="text" id="cta-title-line1">
+              </div>
+              <div class="form-group">
+                <label>Title Line 2</label>
+                <input type="text" id="cta-title-line2">
+              </div>
+              <div class="form-group">
+                <label>Title Emphasis</label>
+                <input type="text" id="cta-title-em">
+              </div>
+              <div class="form-group">
+                <label>Description</label>
+                <input type="text" id="cta-text">
+              </div>
+              <div class="form-group">
+                <label>Button Text</label>
+                <input type="text" id="cta-button">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('services')">💾 Save Services</button>
+        </div>
+      </div>
+
+      <!-- ═══════ CONTACT ═══════ -->
+      <div class="page-section" id="section-contact">
+        <div class="section-header"><h2>Contact Page</h2></div>
+
+        <div class="card">
+          <div class="card-header"><h3>Contact Information</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Section Label</label>
+                <input type="text" id="contact-label">
+              </div>
+              <div class="form-group form-full">
+                <label>Lead Text</label>
+                <input type="text" id="contact-lead">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="contact-email">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="contact-phone">
+              </div>
+              <div class="form-group form-full">
+                <label>Studios / Locations</label>
+                <input type="text" id="contact-studios">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h3>Form Dropdown Options</h3></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>Service Options (one per line)</label>
+              <textarea id="contact-service-options" rows="5"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Budget Options (one per line)</label>
+              <textarea id="contact-budget-options" rows="5"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('contact')">💾 Save Contact</button>
+        </div>
+      </div>
+
+      <!-- ═══════ FOOTER ═══════ -->
+      <div class="page-section" id="section-footer">
+        <div class="section-header"><h2>Footer (Global)</h2></div>
+        <p class="section-desc">These settings apply to the footer on all pages of the website.</p>
+
+        <div class="card">
+          <div class="card-header"><h3>Footer Content</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Logo Text</label>
+                <input type="text" id="footer-logo">
+              </div>
+              <div class="form-group form-full">
+                <label>Tagline</label>
+                <textarea id="footer-tagline" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Copyright Text</label>
+                <input type="text" id="footer-copyright">
+              </div>
+              <div class="form-group">
+                <label>Crafted Text</label>
+                <input type="text" id="footer-crafted">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="text" id="footer-email">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="footer-phone">
+              </div>
+              <div class="form-group form-full">
+                <label>Locations</label>
+                <input type="text" id="footer-locations">
+              </div>
+              <div class="form-group form-full">
+                <label>Social Links (one per line)</label>
+                <textarea id="footer-social" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('footer')">💾 Save Footer</button>
+        </div>
+      </div>
+
+      <!-- ═══════ SITE SETTINGS ═══════ -->
+      <div class="page-section" id="section-site">
+        <div class="section-header"><h2>Site Settings</h2></div>
+
+        <div class="card">
+          <div class="card-header"><h3>Navigation</h3></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Logo Text</label>
+                <input type="text" id="site-logo">
+              </div>
+              <div class="form-group">
+                <label>CTA Button Text</label>
+                <input type="text" id="site-nav-cta">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="save-bar">
+          <button class="btn btn-primary" onclick="saveSection('site')">💾 Save Settings</button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Firebase CDN -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

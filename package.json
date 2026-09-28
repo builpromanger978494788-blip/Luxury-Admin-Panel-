@@ -1,0 +1,39 @@
+{
+  "name": "architecture-admin-panel",
+  "version": "1.0.0",
+  "description": "Admin panel for Architecture Studio website",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "node server.js",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.architecture.adminpanel",
+    "productName": "Architecture Admin Panel",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    },
+    "files": [
+      "**/*"
+    ]
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "firebase": "^12.15.0",
+    "firebase-admin": "^14.1.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3"
+  }
+}

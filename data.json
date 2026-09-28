@@ -1,0 +1,409 @@
+{
+  "about": {
+    "image": "images/ourstory.jpeg",
+    "label": "Our Story",
+    "lead": "Born from a passion for spaces that move the soul.",
+    "principles": {
+      "items": [
+        {
+          "text": "We believe the most powerful designs are often those that know what to leave out. Restraint sharpens the focus on what truly matters — material, light, proportion, and the human experience within.",
+          "title": "Restraint as a design tool"
+        },
+        {
+          "text": "Every material carries history. We source with intention and specify with care, selecting surfaces that will age gracefully and develop patina over time — becoming richer with the lives lived within them.",
+          "title": "Materials as memory"
+        },
+        {
+          "text": "Natural light is our most important collaborator. We orient spaces to capture its quality at different moments of day, letting shadow and brightness choreograph the emotional character of each room.",
+          "title": "Light as architecture"
+        }
+      ],
+      "label": "What Drives Us",
+      "title_em": "Practice",
+      "title_line1": "Principles of"
+    },
+    "stats": [
+      {
+        "label": "Projects",
+        "number": "240+"
+      },
+      {
+        "label": "Years",
+        "number": "18"
+      },
+      {
+        "label": "Studios",
+        "number": "3"
+      }
+    ],
+    "text1": "Architecture Studio was founded in 2006 with a singular conviction: that the spaces we inhabit shape who we become. From our studios in New York, Oslo, and Milan, we've spent nearly two decades translating this belief into homes, towers, and interiors that endure.",
+    "text2": "Our practice is built on deep collaboration — with clients, with craftspeople, with the contexts in which we work. We listen before we design, and we design before we draw."
+  },
+  "contact": {
+    "budget_options": [
+      "Under $50,000",
+      "$50,000 – $150,000",
+      "$150,000 – $500,000",
+      "$500,000 – $1M",
+      "Over $1M"
+    ],
+    "email": "studio@architecture.co",
+    "label": "Let's Talk",
+    "lead": "Every great space begins with a conversation.",
+    "phone": "+1 (212) 555 0170",
+    "service_options": [
+      "Interior Design",
+      "Architecture Planning",
+      "3D Visualization",
+      "Space Renovation",
+      "General Enquiry"
+    ],
+    "studios": "New York · Oslo · Milan"
+  },
+  "footer": {
+    "copyright": "© 2024 Architecture Studio. All rights reserved.",
+    "crafted": "Crafted with intention",
+    "email": "studio@architecture.co",
+    "locations": "New York · Oslo · Milan",
+    "logo": "architecture",
+    "phone": "+1 (212) 555 0170",
+    "social": [
+      "Instagram",
+      "Pinterest",
+      "LinkedIn"
+    ],
+    "tagline": "Luxury architecture and interior design studio. Creating spaces that inspire since 2006."
+  },
+  "home": {
+    "featured": {
+      "cards": [
+        {
+          "category": "Interior Design · 2024",
+          "image": "images/homepage3.jpg",
+          "title": "The Oslo Residence"
+        },
+        {
+          "category": "Architecture · 2024",
+          "image": "images/homepage2.jpg",
+          "title": "Meridian Tower"
+        },
+        {
+          "category": "Renovation · 2023",
+          "image": "images/homepage1.jpg",
+          "title": "Villa Serenita"
+        }
+      ],
+      "label": "Selected Work",
+      "title_em": "Crafted",
+      "title_line1": "Spaces We've"
+    },
+    "hero": {
+      "badge": "Luxury Architecture & Design Studio",
+      "btn_primary": "View Projects",
+      "btn_secondary": "Contact Us",
+      "services": [
+        "Architecture",
+        "Interior Design",
+        "3D Visualization"
+      ],
+      "title_highlight": "Inspire",
+      "title_line1": "We Design Spaces"
+    },
+    "philosophy": {
+      "image": "images/homepage5.jpeg",
+      "label": "Our Philosophy",
+      "text": "We believe great design is invisible — it simply feels right. Our approach blends rigorous architectural thinking with an intuitive understanding of how people inhabit space. Every project is an opportunity to create something that transcends the ordinary.",
+      "title_em": "Function",
+      "title_line1": "Where Form Meets"
+    },
+    "process": {
+      "label": "How We Work",
+      "steps": [
+        {
+          "number": "01",
+          "text": "We begin by deeply understanding your vision, lifestyle, and the possibilities inherent in your space.",
+          "title": "Discovery"
+        },
+        {
+          "number": "02",
+          "text": "Our team develops refined concepts that translate your aspirations into spatial narratives.",
+          "title": "Concept"
+        },
+        {
+          "number": "03",
+          "text": "Every detail is considered — materials, light, proportion — to create a coherent whole.",
+          "title": "Design"
+        },
+        {
+          "number": "04",
+          "text": "We oversee every aspect of delivery, ensuring the built result matches the design vision.",
+          "title": "Realisation"
+        }
+      ],
+      "title_em": "Process",
+      "title_line1": "A Refined"
+    },
+    "stats": [
+      {
+        "label": "Projects Completed",
+        "number": "75+"
+      },
+      {
+        "label": "Years of Excellence",
+        "number": "14"
+      },
+      {
+        "label": "Project Range",
+        "number": "100 Sq.ft shop to 10000 Sq.ft Commercial space."
+      }
+    ],
+    "testimonial": {
+      "author": "— Elena Vasquez, Oslo Residence",
+      "label": "Client Words",
+      "quote": "Working with Architecture transformed not just our space, but the way we experience it every day. The attention to detail and quiet elegance of their approach is unparalleled."
+    }
+  },
+  "projects": [
+    {
+      "category": "architecture",
+      "description": "A luxurious modern villa crafted with elegant architecture and premium interiors.",
+      "id": 1,
+      "images": [
+        "arch/ap1.jpg",
+        "arch/ap2.jpg",
+        "arch/ap3.jpg",
+        "arch/ap4.jpg",
+        "arch/ap5.jpg",
+        "arch/ap6.jpg",
+        "arch/ap7.jpg"
+      ],
+      "thumbnail": "images/homepage3.jpg",
+      "title": "Modern Luxury Villa"
+    },
+    {
+      "category": "interior",
+      "description": "A modern and elegant interior crafted with luxurious textures, warm lighting, and functional living spaces.",
+      "id": 2,
+      "images": [
+        "interior/sm1.jpg",
+        "interior/sm2.jpg",
+        "interior/sm3.jpg",
+        "interior/sm4.jpg",
+        "interior/sm5.jpg"
+      ],
+      "thumbnail": "images/homepage2.jpg",
+      "title": "Specious Interior"
+    },
+    {
+      "category": "renovation",
+      "description": "A thoughtfully renovated heritage-inspired space blending traditional character with modern comfort and refined detailing.",
+      "id": 3,
+      "images": [
+        "ren/pw1.jpg",
+        "ren/pw2.jpg",
+        "ren/pw3.jpg",
+        "ren/pw4.jpg"
+      ],
+      "thumbnail": "ren/pw1.jpg",
+      "title": "Patil Wada"
+    },
+    {
+      "category": "architecture",
+      "description": "A contemporary architectural project designed with modern aesthetics, spacious planning, and elegant exterior detailing.",
+      "id": 4,
+      "images": [
+        "arch/sk1.jpg",
+        "arch/sk2.jpg",
+        "arch/sk3.jpg",
+        "arch/sk4.jpg",
+        "arch/sk5.jpg"
+      ],
+      "thumbnail": "arch/sk1.jpg",
+      "title": "Sandeep Kalbar"
+    },
+    {
+      "category": "residential",
+      "description": "A premium residential project designed with modern living spaces, elegant interiors, and contemporary architectural aesthetics.",
+      "id": 5,
+      "images": [
+        "red/kr1.jpg",
+        "red/kr2.jpg",
+        "red/kr3.jpeg",
+        "red/kr4.jpeg"
+      ],
+      "thumbnail": "red/kr2.jpg",
+      "title": "Krushnkung"
+    },
+    {
+      "category": "renovation",
+      "description": "A beautifully renovated residential project in Dapoli designed with modern comfort and elegant detailing.",
+      "id": 6,
+      "images": [
+        "ren/sw1.jpg",
+        "ren/sw2.jpg",
+        "ren/sw3.jpg",
+        "ren/sw4.jpeg"
+      ],
+      "thumbnail": "ren/sw1.jpg",
+      "title": "Swapnpurti, Dapoli"
+    },
+    {
+      "category": "interior",
+      "description": "A modern luxury residence designed with elegant architecture and spacious contemporary living.",
+      "id": 7,
+      "images": [
+        "interior/ne1.jpeg",
+        "interior/ne2.jpeg",
+        "interior/ne3.jpeg",
+        "interior/ne4.jpeg",
+        "interior/ne5.jpeg"
+      ],
+      "thumbnail": "interior/ne1.jpeg",
+      "title": "Nehra"
+    },
+    {
+      "category": "architecture",
+      "description": "A modern luxury residence designed with elegant architecture and spacious contemporary living.",
+      "id": 8,
+      "images": [
+        "arch/ar1.jpeg",
+        "arch/ar2.jpeg",
+        "arch/ar3.jpeg",
+        "arch/ar4.jpeg",
+        "arch/ar5.jpeg",
+        "arch/ar6.jpeg",
+        "arch/ar7.jpeg"
+      ],
+      "thumbnail": "arch/ar8.jpeg",
+      "title": "New Villa"
+    },
+    {
+      "category": "interior",
+      "description": "A modern luxury residence designed with elegant architecture and spacious contemporary living.",
+      "id": 9,
+      "images": [
+        "interior/id1.jpeg",
+        "interior/id2.jpeg",
+        "interior/id3.jpeg",
+        "interior/id4.jpeg",
+        "interior/id5.jpeg",
+        "interior/id6.jpeg"
+      ],
+      "thumbnail": "interior/id2.jpeg",
+      "title": "Interior Designs"
+    },
+    {
+      "category": "architecture",
+      "description": "A modern luxury residence designed with elegant architecture and spacious contemporary living.",
+      "id": 10,
+      "images": [
+        "arch/dp1.jpeg",
+        "arch/dp2.jpeg",
+        "arch/dp3.jpeg",
+        "arch/dp4.jpeg",
+        "arch/dp5.jpeg",
+        "arch/dp6.jpeg",
+        "arch/dp7.jpeg",
+        "arch/dp8.jpeg"
+      ],
+      "thumbnail": "arch/dp3.jpeg",
+      "title": "Dhudhganga Pathsawnstha"
+    },
+    {
+      "category": "residential",
+      "description": "A modern luxury residence designed with elegant architecture and spacious contemporary living.",
+      "id": 11,
+      "images": [
+        "red/rd1.jpeg",
+        "red/rd2.jpeg",
+        "red/rd3.jpeg",
+        "red/rd4.jpeg"
+      ],
+      "thumbnail": "red/rd2.jpeg",
+      "title": "Residential Project"
+    },
+    {
+      "category": "architecture",
+      "description": "A modern luxury residence designed with elegant architecture and spacious contemporary living.",
+      "id": 12,
+      "images": [
+        "arch/nar1.jpeg",
+        "arch/nar2.jpeg",
+        "arch/nar3.jpeg",
+        "arch/nar4.jpeg",
+        "arch/nar5.jpeg",
+        "arch/nar6.jpeg"
+      ],
+      "thumbnail": "arch/nar6.jpeg",
+      "title": "New Architecture"
+    }
+  ],
+  "services": {
+    "cta": {
+      "label": "Start a Conversation",
+      "title_line1": "Ready to Begin",
+      "title_line2": "Your",
+      "title_em": "Project?",
+      "text": "Tell us about your vision. We'd love to listen.",
+      "button": "Get in Touch"
+    },
+    "description": "A complete range of architectural and design services, delivered with precision and intention.",
+    "items": [
+      {
+        "features": [
+          "Concept development & mood boards",
+          "Material & finish specification",
+          "Furniture selection & procurement",
+          "Lighting design"
+        ],
+        "icon": "🏛",
+        "number": "01",
+        "text": "We create interiors that are both visually compelling and deeply liveable — spaces where every element has been considered for its contribution to the whole.",
+        "title": "Interior Design"
+      },
+      {
+        "features": [
+          "Feasibility & site analysis",
+          "Schematic & design development",
+          "Planning & permit applications",
+          "Construction documentation"
+        ],
+        "icon": "📐",
+        "number": "02",
+        "text": "From master planning to detailed design, our architectural services cover every scale of project with the same rigorous attention to craft and context.",
+        "title": "Architecture Planning"
+      },
+      {
+        "features": [
+          "Photorealistic still renders",
+          "Animated walkthroughs",
+          "Virtual reality experiences",
+          "Design presentation decks"
+        ],
+        "icon": "✦",
+        "number": "03",
+        "text": "Our visualization team produces photorealistic renders and animations that communicate the full experiential quality of a design before it is built.",
+        "title": "3D Visualization"
+      },
+      {
+        "features": [
+          "Heritage building assessment",
+          "Adaptive reuse strategy",
+          "Full project management",
+          "Contractor coordination"
+        ],
+        "icon": "◈",
+        "number": "04",
+        "text": "We transform existing spaces with sensitivity to their history and potential — uncovering what is valuable and reinventing what can be better.",
+        "title": "Space Renovation"
+      }
+    ],
+    "label": "What We Offer",
+    "title_em": "Services",
+    "title_line1": "Our"
+  },
+  "site": {
+    "logo": "architecture",
+    "nav_cta": "Get in Touch"
+  }
+}

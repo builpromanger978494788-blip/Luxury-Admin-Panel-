@@ -2,7 +2,6 @@
   "name": "architecture-admin-panel",
   "version": "1.0.0",
   "description": "Admin panel for Architecture Studio website",
-  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "electron": "electron main.js",

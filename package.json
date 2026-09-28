@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Admin panel for Architecture Studio website",
   "scripts": {
-    "start": "node server.js",
+    "start-local": "node server.js",
     "electron": "electron main.js",
     "dev": "node server.js",
     "build": "electron-builder",

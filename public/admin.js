@@ -55,6 +55,7 @@ async function loadContent() {
   }
   populateAllForms();
   updateDashboard();
+  setupMessagesListener();
   showLoading(false);
 }
 
@@ -124,7 +125,7 @@ function showSection(id) {
   document.getElementById('headerTitle').textContent = titles[id] || id;
 
   if (id === 'messages') {
-    loadMessages();
+    setupMessagesListener();
   }
 }
 
@@ -585,54 +586,80 @@ function populateContact() {
 }
 
 // ═══════ MESSAGES ═══════
-async function loadMessages() {
+let messagesListener = null;
+let initialMessagesLoaded = false;
+let messagesCount = 0;
+
+function setupMessagesListener() {
+  if (messagesListener) return; // Only setup once
+  
   const container = document.getElementById('messages-list');
-  if (!container) return;
-  container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin: 0 auto; display:block;"></div><p>Loading messages...</p></div>';
-  try {
-    const snapshot = await db.ref('website/messages').orderByChild('createdAt').once('value');
+  if (container) {
+    container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin: 0 auto; display:block;"></div><p>Loading messages...</p></div>';
+  }
+
+  const messagesRef = db.ref('website/messages');
+  messagesListener = messagesRef.on('value', (snapshot) => {
+    const listContainer = document.getElementById('messages-list');
+    
     if (snapshot.exists()) {
       const messagesObj = snapshot.val();
       const messagesArr = Object.entries(messagesObj).map(([id, data]) => ({ id, ...data }));
       messagesArr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       
+      // Notify if new message arrived after initial load
+      if (initialMessagesLoaded && messagesArr.length > messagesCount) {
+        showToast('💬 Naya client message receive hua hai!', 'success');
+      }
+      
+      messagesCount = messagesArr.length;
+      initialMessagesLoaded = true;
+      
+      if (!listContainer) return;
+
       if (messagesArr.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>';
+        listContainer.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>';
         return;
       }
 
-      container.innerHTML = messagesArr.map(m => {
+      listContainer.innerHTML = messagesArr.map(m => {
         const date = m.createdAt ? new Date(m.createdAt).toLocaleString() : 'Unknown Date';
+        const initial = (m.firstName || '?')[0].toUpperCase();
         return `
-        <div class="card" style="margin-bottom: 16px;">
-          <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div>
-              <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);">${escapeHtml(m.firstName || '')} ${escapeHtml(m.lastName || '')}</h3> 
-              <a href="mailto:${escapeAttr(m.email)}" style="color: var(--primary-color); font-size: 0.9rem;">${escapeHtml(m.email)}</a>
-            </div>
-            <div style="text-align: right; font-size: 0.85rem; color: var(--text-secondary);">
-              <div>${date}</div>
-              <div style="margin-top: 8px;">
-                <button class="btn btn-sm btn-danger" onclick="deleteMessage('${m.id}')">🗑️ Delete</button>
+        <div class="message-card" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s;">
+          <div class="message-card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--bg-color);">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--primary-color); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600;">
+                ${initial}
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary); font-weight: 600;">${escapeHtml(m.firstName || '')} ${escapeHtml(m.lastName || '')}</h3> 
+                <a href="mailto:${escapeAttr(m.email)}" style="color: var(--text-secondary); font-size: 0.85rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--text-secondary)'">${escapeHtml(m.email)}</a>
               </div>
             </div>
-          </div>
-          <div class="card-body">
-            <div style="display:flex; gap: 16px; margin-bottom: 16px; font-size: 0.9rem; flex-wrap: wrap;">
-              <div style="background: var(--bg-color); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border);"><strong>Service:</strong> ${escapeHtml(m.service || 'N/A')}</div>
-              <div style="background: var(--bg-color); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border);"><strong>Budget:</strong> ${escapeHtml(m.budget || 'N/A')}</div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">${date}</div>
+              <button class="btn btn-sm btn-danger" onclick="deleteMessage('${m.id}')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; transition: background 0.2s;">🗑️ Delete</button>
             </div>
-            <div style="background: var(--bg-color); padding: 16px; border-radius: 6px; white-space: pre-wrap; color: var(--text-primary); border: 1px solid var(--border);">${escapeHtml(m.message || '')}</div>
+          </div>
+          <div class="message-card-body" style="padding: 20px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+              <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">📌 Service: ${escapeHtml(m.service || 'N/A')}</span>
+              <span style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">💰 Budget: ${escapeHtml(m.budget || 'N/A')}</span>
+            </div>
+            <div style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(m.message || '')}</div>
           </div>
         </div>
         `;
       }).join('');
     } else {
-      container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>';
+      initialMessagesLoaded = true;
+      messagesCount = 0;
+      if (listContainer) {
+        listContainer.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>';
+      }
     }
-  } catch (err) {
-    container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load messages: ' + err.message + '</p></div>';
-  }
+  });
 }
 
 async function deleteMessage(id) {
@@ -640,7 +667,6 @@ async function deleteMessage(id) {
   try {
     await db.ref('website/messages/' + id).remove();
     showToast('Message deleted', 'success');
-    loadMessages();
   } catch (err) {
     showToast('Failed to delete message: ' + err.message, 'error');
   }

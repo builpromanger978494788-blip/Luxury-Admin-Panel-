@@ -159,8 +159,11 @@ function populateHome() {
   setValue('process-title-em', h.process.title_em);
   renderProcessSteps(h.process.steps || []);
   setValue('test-label', h.testimonial.label);
-  setValue('test-quote', h.testimonial.quote);
-  setValue('test-author', h.testimonial.author);
+  
+  if (!h.testimonial.items && h.testimonial.quote) {
+    h.testimonial.items = [{ quote: h.testimonial.quote, author: h.testimonial.author }];
+  }
+  renderTestimonials(h.testimonial.items || []);
 }
 
 function renderHeroServices(services) {
@@ -270,6 +273,39 @@ function renderProcessSteps(steps) {
       </div>
     </div>
   `).join('');
+}
+
+function renderTestimonials(items) {
+  const container = document.getElementById('test-items-container');
+  container.innerHTML = items.map((t, i) => `
+    <div class="repeater-item">
+      <div class="repeater-header">
+        <h4><span class="repeater-num">${i + 1}</span> Client Word ${i + 1}</h4>
+        <button class="btn-remove" onclick="removeTestimonial(${i})">🗑️</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Author / Client Name</label>
+          <input type="text" value="${escapeAttr(t.author)}" onchange="siteData.home.testimonial.items[${i}].author=this.value">
+        </div>
+        <div class="form-group form-full">
+          <label>Quote</label>
+          <textarea rows="3" onchange="siteData.home.testimonial.items[${i}].quote=this.value">${escapeHtml(t.quote)}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('') + `<button class="btn btn-sm" onclick="addTestimonial()">+ Add Client Word</button>`;
+}
+
+function addTestimonial() {
+  if (!siteData.home.testimonial.items) siteData.home.testimonial.items = [];
+  siteData.home.testimonial.items.push({ quote: '', author: '' });
+  renderTestimonials(siteData.home.testimonial.items);
+}
+
+function removeTestimonial(i) {
+  siteData.home.testimonial.items.splice(i, 1);
+  renderTestimonials(siteData.home.testimonial.items);
 }
 
 // ═══════ PROJECTS ═══════
@@ -614,8 +650,6 @@ function collectFormData(section) {
       siteData.home.process.title_line1 = getValue('process-title-line1');
       siteData.home.process.title_em = getValue('process-title-em');
       siteData.home.testimonial.label = getValue('test-label');
-      siteData.home.testimonial.quote = getValue('test-quote');
-      siteData.home.testimonial.author = getValue('test-author');
       break;
     case 'about':
       siteData.about.label = getValue('about-label');

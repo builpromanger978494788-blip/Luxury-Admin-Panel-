@@ -158,9 +158,31 @@
       }
     ],
     "testimonial": {
-      "author": "— Elena Vasquez, Oslo Residence",
       "label": "Client Words",
-      "quote": "Working with Architecture transformed not just our space, but the way we experience it every day. The attention to detail and quiet elegance of their approach is unparalleled."
+      "author": "— Elena Vasquez, Oslo Residence",
+      "quote": "Working with Architecture transformed not just our space, but the way we experience it every day. The attention to detail and quiet elegance of their approach is unparalleled.",
+      "items": [
+        {
+          "author": "— Elena Vasquez, Oslo Residence",
+          "quote": "Working with Architecture transformed not just our space, but the way we experience it every day. The attention to detail and quiet elegance of their approach is unparalleled."
+        },
+        {
+          "author": "— David Chen, Meridian Tower",
+          "quote": "The team's ability to balance functional modern requirements with breathtaking aesthetics is truly remarkable. Our project was delivered with uncompromising quality."
+        },
+        {
+          "author": "— Sarah Jenkins, Villa Serenita",
+          "quote": "They didn't just design a house, they crafted a home that perfectly reflects our lifestyle. Every corner tells a story of careful consideration and brilliant design."
+        },
+        {
+          "author": "— Vikramaditya Rao, Pune Residence",
+          "quote": "From initial concept sketches to final handover, their dedication and architectural vision was phenomenal. Truly world-class craftsmanship."
+        },
+        {
+          "author": "— Michael Ross, TechHub HQ",
+          "quote": "An absolute pleasure to collaborate with. Their innovative spatial planning brought our commercial flagship to life beyond our highest expectations."
+        }
+      ]
     }
   },
   "projects": [

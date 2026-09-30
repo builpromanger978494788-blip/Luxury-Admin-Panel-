@@ -118,9 +118,14 @@ function showSection(id) {
   const titles = {
     dashboard: 'Dashboard', home: 'Home Page', projects: 'Projects',
     about: 'About Page', services: 'Services Page', contact: 'Contact Page',
+    messages: 'Client Messages',
     footer: 'Footer', site: 'Site Settings'
   };
   document.getElementById('headerTitle').textContent = titles[id] || id;
+
+  if (id === 'messages') {
+    loadMessages();
+  }
 }
 
 // ── Populate All Forms ──
@@ -577,6 +582,68 @@ function populateContact() {
   setValue('contact-studios', c.studios);
   setValue('contact-service-options', (c.service_options || []).join('\n'));
   setValue('contact-budget-options', (c.budget_options || []).join('\n'));
+}
+
+// ═══════ MESSAGES ═══════
+async function loadMessages() {
+  const container = document.getElementById('messages-list');
+  if (!container) return;
+  container.innerHTML = '<div class="empty-state"><div class="spinner" style="margin: 0 auto; display:block;"></div><p>Loading messages...</p></div>';
+  try {
+    const snapshot = await db.ref('website/messages').orderByChild('createdAt').once('value');
+    if (snapshot.exists()) {
+      const messagesObj = snapshot.val();
+      const messagesArr = Object.entries(messagesObj).map(([id, data]) => ({ id, ...data }));
+      messagesArr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      
+      if (messagesArr.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>';
+        return;
+      }
+
+      container.innerHTML = messagesArr.map(m => {
+        const date = m.createdAt ? new Date(m.createdAt).toLocaleString() : 'Unknown Date';
+        return `
+        <div class="card" style="margin-bottom: 16px;">
+          <div class="card-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary);">${escapeHtml(m.firstName || '')} ${escapeHtml(m.lastName || '')}</h3> 
+              <a href="mailto:${escapeAttr(m.email)}" style="color: var(--primary-color); font-size: 0.9rem;">${escapeHtml(m.email)}</a>
+            </div>
+            <div style="text-align: right; font-size: 0.85rem; color: var(--text-secondary);">
+              <div>${date}</div>
+              <div style="margin-top: 8px;">
+                <button class="btn btn-sm btn-danger" onclick="deleteMessage('${m.id}')">🗑️ Delete</button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div style="display:flex; gap: 16px; margin-bottom: 16px; font-size: 0.9rem; flex-wrap: wrap;">
+              <div style="background: var(--bg-color); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border);"><strong>Service:</strong> ${escapeHtml(m.service || 'N/A')}</div>
+              <div style="background: var(--bg-color); padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border);"><strong>Budget:</strong> ${escapeHtml(m.budget || 'N/A')}</div>
+            </div>
+            <div style="background: var(--bg-color); padding: 16px; border-radius: 6px; white-space: pre-wrap; color: var(--text-primary); border: 1px solid var(--border);">${escapeHtml(m.message || '')}</div>
+          </div>
+        </div>
+        `;
+      }).join('');
+    } else {
+      container.innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet.</p></div>';
+    }
+  } catch (err) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Failed to load messages: ' + err.message + '</p></div>';
+  }
+}
+
+async function deleteMessage(id) {
+  if (!confirm("Are you sure you want to delete this message?")) return;
+  try {
+    await db.ref('website/messages/' + id).remove();
+    showToast('Message deleted', 'success');
+    loadMessages();
+  } catch (err) {
+    showToast('Failed to delete message: ' + err.message, 'error');
+  }
 }
 
 // ═══════ FOOTER ═══════

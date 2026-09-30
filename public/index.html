@@ -45,6 +45,9 @@
       <button class="sidebar-link" onclick="showSection('contact')">
         <span class="icon">📧</span> Contact
       </button>
+      <button class="sidebar-link" onclick="showSection('messages')">
+        <span class="icon">💬</span> Messages
+      </button>
 
       <div class="sidebar-section-title">Global</div>
       <button class="sidebar-link" onclick="showSection('footer')">
@@ -446,6 +449,15 @@
         <div class="save-bar">
           <button class="btn btn-primary" onclick="saveSection('contact')">💾 Save Contact</button>
         </div>
+      </div>
+
+      <!-- ═══════ MESSAGES ═══════ -->
+      <div class="page-section" id="section-messages">
+        <div class="section-header">
+          <h2>Client Messages</h2>
+          <button class="btn btn-primary" onclick="loadMessages()">🔄 Refresh Messages</button>
+        </div>
+        <div id="messages-list"></div>
       </div>
 
       <!-- ═══════ FOOTER ═══════ -->

@@ -21,7 +21,34 @@ let firebaseConnected = false;
 const API = '/api';
 
 // ── Init ──
-document.addEventListener('DOMContentLoaded', loadContent);
+// Request Notification Permission
+let notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
+function requestNotificationPermission() {
+  if ("Notification" in window) {
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+      Notification.requestPermission();
+    }
+  }
+}
+
+function playNotification() {
+  try {
+    notificationSound.play().catch(e => console.warn('Audio play failed:', e));
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification("New Client Message", {
+        body: "You have received a new message from the website contact form.",
+        icon: "favicon.jpg"
+      });
+    }
+  } catch (e) {
+    console.warn('Notification failed:', e);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadContent();
+  requestNotificationPermission();
+});
 
 async function loadContent() {
   showLoading(true);
@@ -610,6 +637,7 @@ function setupMessagesListener() {
       // Notify if new message arrived after initial load
       if (initialMessagesLoaded && messagesArr.length > messagesCount) {
         showToast('💬 Naya client message receive hua hai!', 'success');
+        playNotification();
       }
       
       messagesCount = messagesArr.length;
@@ -626,28 +654,28 @@ function setupMessagesListener() {
         const date = m.createdAt ? new Date(m.createdAt).toLocaleString() : 'Unknown Date';
         const initial = (m.firstName || '?')[0].toUpperCase();
         return `
-        <div class="message-card" style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s;">
-          <div class="message-card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--bg-color);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <div style="width: 42px; height: 42px; border-radius: 50%; background: var(--primary-color); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600;">
+        <div class="message-card" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; transition: transform 0.2s;">
+          <div class="message-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: #f8fafc;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #1e293b, #0f172a); color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 700; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);">
                 ${initial}
               </div>
               <div>
-                <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-primary); font-weight: 600;">${escapeHtml(m.firstName || '')} ${escapeHtml(m.lastName || '')}</h3> 
-                <a href="mailto:${escapeAttr(m.email)}" style="color: var(--text-secondary); font-size: 0.85rem; text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--primary-color)'" onmouseout="this.style.color='var(--text-secondary)'">${escapeHtml(m.email)}</a>
+                <h3 style="margin: 0 0 4px 0; font-size: 1.15rem; color: #0f172a; font-weight: 700;">${escapeHtml(m.firstName || '')} ${escapeHtml(m.lastName || '')}</h3> 
+                <a href="mailto:${escapeAttr(m.email)}" style="color: #64748b; font-size: 0.9rem; text-decoration: none; transition: color 0.2s; display: inline-block;" onmouseover="this.style.color='#2563eb'" onmouseout="this.style.color='#64748b'">${escapeHtml(m.email)}</a>
               </div>
             </div>
             <div style="text-align: right;">
-              <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">${date}</div>
-              <button class="btn btn-sm btn-danger" onclick="deleteMessage('${m.id}')" style="padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; border: none; cursor: pointer; transition: background 0.2s;">🗑️ Delete</button>
+              <div style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px; font-weight: 600;">${date}</div>
+              <button class="btn btn-sm" onclick="deleteMessage('${m.id}')" style="padding: 6px 14px; font-size: 0.8rem; border-radius: 6px; background-color: #fee2e2; color: #ef4444; border: 1px solid #fecaca; cursor: pointer; transition: all 0.2s; font-weight: 600;" onmouseover="this.style.backgroundColor='#fecaca'" onmouseout="this.style.backgroundColor='#fee2e2'">🗑️ Delete</button>
             </div>
           </div>
-          <div class="message-card-body" style="padding: 20px;">
-            <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
-              <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">📌 Service: ${escapeHtml(m.service || 'N/A')}</span>
-              <span style="background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 500;">💰 Budget: ${escapeHtml(m.budget || 'N/A')}</span>
+          <div class="message-card-body" style="padding: 24px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+              <span style="background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">📌 Service: ${escapeHtml(m.service || 'N/A')}</span>
+              <span style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">💰 Budget: ${escapeHtml(m.budget || 'N/A')}</span>
             </div>
-            <div style="color: var(--text-primary); font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(m.message || '')}</div>
+            <div style="color: #334155; font-size: 1rem; line-height: 1.7; white-space: pre-wrap; background: #ffffff; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px;">${escapeHtml(m.message || '')}</div>
           </div>
         </div>
         `;

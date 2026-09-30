@@ -1,0 +1,29 @@
+{
+  "name": "sohanmali-admin",
+  "version": "1.0.0",
+  "description": "Admin Panel for Architecture Studio",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "author": "Gulesh Patel",
+  "build": {
+    "appId": "com.sohanmali.admin",
+    "productName": "Sohanmali Admin",
+    "win": {
+      "icon": "icon.ico",
+      "target": ["portable"]
+    },
+    "portable": {
+      "artifactName": "Sohanmali_Admin_Portable.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^32.3.3",
+    "electron-builder": "^25.1.8",
+    "jimp": "^0.16.1",
+    "png-to-ico": "^2.1.8"
+  }
+}

@@ -46,9 +46,26 @@ function playNotification() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Load Theme
+  const savedTheme = localStorage.getItem('adminTheme');
+  if (savedTheme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+
   loadContent();
   requestNotificationPermission();
 });
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('adminTheme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('adminTheme', 'dark');
+  }
+}
 
 async function loadContent() {
   showLoading(true);

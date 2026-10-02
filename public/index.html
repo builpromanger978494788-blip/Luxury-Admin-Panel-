@@ -166,6 +166,44 @@
                 <button class="btn btn-sm btn-primary" onclick="addHeroService()">Add</button>
               </div>
             </div>
+            <div class="form-group" style="margin-top:24px;border-top:1px solid var(--border);padding-top:20px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <label style="font-size:0.95rem;font-weight:600;margin-bottom:2px;display:block;">Background Slider Images</label>
+                  <div style="font-size:0.8rem;color:var(--text-secondary);">Directly upload high-resolution hero background photos or manage preset images.</div>
+                </div>
+              </div>
+
+              <!-- Upload Zone -->
+              <div class="slider-upload-dropzone" onclick="document.getElementById('hero-slider-file-input').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleHeroSliderDrop(event)">
+                <input type="file" id="hero-slider-file-input" accept="image/*" multiple style="display:none;" onchange="uploadHeroSliderFiles(this.files)">
+                <div style="font-size:1.8rem;margin-bottom:4px;">☁️ 📸</div>
+                <div style="font-weight:600;font-size:0.9rem;color:var(--text-primary);">Click to Upload Images or Drag & Drop Here</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Direct upload to Cloudinary (Multiple images supported)</div>
+              </div>
+
+              <!-- Active Slider Images -->
+              <div style="margin-top:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                  <span style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">Active Hero Images (<span id="hero-slider-active-count">0</span>)</span>
+                  <span id="hero-slider-mode-badge" class="badge"></span>
+                </div>
+                <div id="hero-slider-info-banner" style="margin-bottom:12px;font-size:0.8rem;padding:8px 12px;border-radius:6px;display:flex;align-items:center;gap:8px;"></div>
+                <div id="hero-slider-images" class="list-container" style="display:flex;flex-direction:column;gap:8px;"></div>
+              </div>
+
+              <!-- Preset Library (Removed Defaults) -->
+              <div id="hero-preset-library-box" style="margin-top:22px;border-top:1px dashed var(--border);padding-top:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                  <div>
+                    <span style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">Preset Library Images (Archived)</span>
+                    <div style="font-size:0.75rem;color:var(--text-secondary);">One-click restore original default studio photos back into the slider</div>
+                  </div>
+                  <button class="btn btn-sm btn-outline" id="btn-restore-all-presets" onclick="restoreAllHeroPresets()" style="font-size:0.75rem;padding:4px 10px;display:none;">➕ Add All Defaults Back</button>
+                </div>
+                <div id="hero-preset-images-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+              </div>
+            </div>
           </div>
         </div>
 

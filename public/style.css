@@ -722,3 +722,118 @@ body {
 
 .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
 .empty-state p { font-size: 0.88rem; }
+
+/* ── Hero Slider Manager ── */
+.slider-upload-dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  background: var(--surface-hover);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.slider-upload-dropzone:hover, .slider-upload-dropzone.dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.slider-img-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.slider-img-item:hover {
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.slider-img-thumb {
+  width: 54px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #000;
+  flex-shrink: 0;
+}
+
+.slider-img-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slider-img-url {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: monospace;
+}
+
+.slider-img-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge-custom {
+  background: rgba(96, 165, 250, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.badge-preset {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.badge-locked {
+  background: rgba(156, 163, 175, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(156, 163, 175, 0.3);
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.btn-restore-preset {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-restore-preset:hover {
+  background: var(--accent);
+  color: #fff;
+}
+

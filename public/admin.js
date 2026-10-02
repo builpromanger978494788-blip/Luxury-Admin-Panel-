@@ -195,6 +195,7 @@ function populateHome() {
   setValue('hero-btn-primary', h.hero.btn_primary);
   setValue('hero-btn-secondary', h.hero.btn_secondary);
   renderHeroServices(h.hero.services || []);
+  renderHeroSliderImages(h.hero.sliderImages || []);
   renderStats(h.stats || []);
   setValue('featured-label', h.featured.label);
   setValue('featured-title-line1', h.featured.title_line1);
@@ -237,6 +238,231 @@ function removeHeroService(i) {
   siteData.home.hero.services.splice(i, 1);
   renderHeroServices(siteData.home.hero.services);
 }
+
+const DEFAULT_HERO_PRESET_IMAGES = [
+  "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=80",
+  "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80"
+];
+
+function isPresetImage(url) {
+  return DEFAULT_HERO_PRESET_IMAGES.includes(url);
+}
+
+function renderHeroSliderImages(images) {
+  const container = document.getElementById('hero-slider-images');
+  const countBadge = document.getElementById('hero-slider-active-count');
+  const modeBadge = document.getElementById('hero-slider-mode-badge');
+  const infoBanner = document.getElementById('hero-slider-info-banner');
+  const presetList = document.getElementById('hero-preset-images-list');
+  const restoreAllBtn = document.getElementById('btn-restore-all-presets');
+  const presetLibraryBox = document.getElementById('hero-preset-library-box');
+
+  if (!container) return;
+
+  // Filter out any broken image reference
+  const BROKEN_IMG_URL = "https://images.unsplash.com/photo-1600607687931-cebf57434778?auto=format&fit=crop&w=1600&q=80";
+  if (siteData && siteData.home && siteData.home.hero && Array.isArray(siteData.home.hero.sliderImages)) {
+    siteData.home.hero.sliderImages = siteData.home.hero.sliderImages.filter(img => img !== BROKEN_IMG_URL);
+  }
+
+  let activeImages = Array.isArray(images) && images.length > 0 ? images.filter(img => img !== BROKEN_IMG_URL) : [];
+  
+  // Check if any custom uploaded image is currently present in active images
+  const hasCustomImages = activeImages.some(img => !isPresetImage(img));
+
+  let displayImages = [];
+  let isDefaultLockedState = false;
+
+  if (activeImages.length === 0) {
+    displayImages = [...DEFAULT_HERO_PRESET_IMAGES];
+    isDefaultLockedState = true;
+  } else if (!hasCustomImages && activeImages.length === DEFAULT_HERO_PRESET_IMAGES.length) {
+    displayImages = activeImages;
+    isDefaultLockedState = true;
+  } else {
+    displayImages = activeImages;
+    isDefaultLockedState = false;
+  }
+
+  if (countBadge) countBadge.textContent = displayImages.length;
+
+  if (modeBadge) {
+    if (isDefaultLockedState) {
+      modeBadge.textContent = '🔒 Default Preset Mode';
+      modeBadge.className = 'badge badge-locked';
+    } else {
+      modeBadge.textContent = '✨ Custom Slider Mode';
+      modeBadge.className = 'badge badge-custom';
+    }
+  }
+
+  if (infoBanner) {
+    if (isDefaultLockedState) {
+      infoBanner.style.background = 'rgba(255, 255, 255, 0.04)';
+      infoBanner.style.border = '1px solid var(--border)';
+      infoBanner.style.color = 'var(--text-secondary)';
+      infoBanner.innerHTML = `<span>ℹ️ <strong>Default Presets Active:</strong> Website is showing default studio photos. Upload custom images above to replace or customize them.</span>`;
+    } else {
+      infoBanner.style.background = 'rgba(96, 165, 250, 0.08)';
+      infoBanner.style.border = '1px solid rgba(96, 165, 250, 0.2)';
+      infoBanner.style.color = 'var(--accent)';
+      infoBanner.innerHTML = `<span>💡 <strong>Custom Images Active:</strong> You can remove preset photos if you want only custom images to appear. Removed presets are saved in the library below for 1-click restore.</span>`;
+    }
+  }
+
+  // Render Active Images
+  if (displayImages.length === 0) {
+    container.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem;">No active images in slider.</div>`;
+  } else {
+    container.innerHTML = displayImages.map((img, i) => {
+      const isPreset = isPresetImage(img);
+      const badgeHtml = isPreset
+        ? `<span class="badge-preset">Preset Default</span>`
+        : `<span class="badge-custom">Custom Upload</span>`;
+
+      let actionButtonHtml = '';
+      if (isDefaultLockedState) {
+        actionButtonHtml = `<span style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;" title="Upload custom image to customize or remove default images">🔒 Default</span>`;
+      } else {
+        actionButtonHtml = `<button class="btn btn-sm btn-outline-danger" style="color:var(--red);border-color:var(--red);padding:4px 10px;font-size:0.75rem;cursor:pointer;" onclick="removeHeroSliderImage(${i})" title="${isPreset ? 'Remove from active slider (stored in library below)' : 'Delete uploaded image'}">${isPreset ? '✕ Remove from Slider' : '🗑️ Delete'}</button>`;
+      }
+
+      return `
+        <div class="slider-img-item">
+          <img src="${escapeAttr(img)}" class="slider-img-thumb" alt="Hero Slide ${i+1}" onerror="this.src='images/placeholder.jpg'" />
+          <div class="slider-img-info">
+            <div class="slider-img-badges">
+              <span style="font-weight:600;font-size:0.85rem;color:var(--text-primary);">Slide ${i + 1}</span>
+              ${badgeHtml}
+            </div>
+            <div class="slider-img-url" title="${escapeAttr(img)}">${escapeHtml(img)}</div>
+          </div>
+          <div>${actionButtonHtml}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Render Preset Library (Removed Default Images)
+  const currentActiveList = activeImages.length > 0 ? activeImages : DEFAULT_HERO_PRESET_IMAGES;
+  const removedPresets = DEFAULT_HERO_PRESET_IMAGES.filter(preset => !currentActiveList.includes(preset));
+
+  if (presetLibraryBox) {
+    if (removedPresets.length > 0) {
+      if (restoreAllBtn) restoreAllBtn.style.display = 'inline-block';
+      if (presetList) {
+        presetList.innerHTML = removedPresets.map((preset, idx) => `
+          <div class="slider-img-item" style="opacity:0.9;background:var(--surface-hover);">
+            <img src="${escapeAttr(preset)}" class="slider-img-thumb" alt="Preset ${idx+1}" onerror="this.src='images/placeholder.jpg'" />
+            <div class="slider-img-info">
+              <div class="slider-img-badges">
+                <span style="font-weight:600;font-size:0.85rem;color:var(--text-primary);">Default Studio Preset ${DEFAULT_HERO_PRESET_IMAGES.indexOf(preset) + 1}</span>
+                <span class="badge-preset">Available to Add</span>
+              </div>
+              <div class="slider-img-url">${escapeHtml(preset)}</div>
+            </div>
+            <button class="btn-restore-preset" onclick="addHeroPresetBack('${escapeAttr(preset)}')">➕ Add Back to Slider</button>
+          </div>
+        `).join('');
+      }
+    } else {
+      if (restoreAllBtn) restoreAllBtn.style.display = 'none';
+      if (presetList) {
+        presetList.innerHTML = `<div style="font-size:0.8rem;color:var(--text-muted);padding:8px 0;">All default preset images are currently added in the slider.</div>`;
+      }
+    }
+  }
+}
+
+async function uploadHeroSliderFiles(files) {
+  if (!files || files.length === 0) return;
+  showLoading(true);
+
+  if (!siteData.home.hero.sliderImages || siteData.home.hero.sliderImages.length === 0) {
+    siteData.home.hero.sliderImages = [...DEFAULT_HERO_PRESET_IMAGES];
+  }
+
+  let uploadCount = 0;
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('folder', 'hero_slider');
+
+      const response = await fetch(`${API}/upload-cloudinary`, {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+
+      if (result.success && result.url) {
+        siteData.home.hero.sliderImages.push(result.url);
+        uploadCount++;
+      } else {
+        throw new Error(result.error || `Upload failed for ${file.name}`);
+      }
+    }
+
+    renderHeroSliderImages(siteData.home.hero.sliderImages);
+    showToast(`☁️ ${uploadCount} Hero image(s) uploaded successfully!`, 'success');
+  } catch (err) {
+    console.error('Slider image upload error:', err);
+    showToast('Slider upload failed: ' + err.message, 'error');
+  } finally {
+    const fileInput = document.getElementById('hero-slider-file-input');
+    if (fileInput) fileInput.value = '';
+    showLoading(false);
+  }
+}
+
+function handleHeroSliderDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const dropzone = e.currentTarget;
+  if (dropzone) dropzone.classList.remove('dragover');
+  if (e.dataTransfer && e.dataTransfer.files) {
+    uploadHeroSliderFiles(e.dataTransfer.files);
+  }
+}
+
+function removeHeroSliderImage(i) {
+  if (!siteData.home.hero.sliderImages || siteData.home.hero.sliderImages.length === 0) {
+    siteData.home.hero.sliderImages = [...DEFAULT_HERO_PRESET_IMAGES];
+  }
+
+  const removedUrl = siteData.home.hero.sliderImages[i];
+  siteData.home.hero.sliderImages.splice(i, 1);
+
+  const hasCustom = siteData.home.hero.sliderImages.some(img => !isPresetImage(img));
+  if (!hasCustom && siteData.home.hero.sliderImages.length === 0) {
+    siteData.home.hero.sliderImages = [];
+  }
+
+  renderHeroSliderImages(siteData.home.hero.sliderImages);
+  showToast(isPresetImage(removedUrl) ? 'Preset removed from active slider (saved in library)' : 'Custom image removed', 'info');
+}
+
+function addHeroPresetBack(presetUrl) {
+  if (!siteData.home.hero.sliderImages) siteData.home.hero.sliderImages = [];
+  if (!siteData.home.hero.sliderImages.includes(presetUrl)) {
+    siteData.home.hero.sliderImages.push(presetUrl);
+  }
+  renderHeroSliderImages(siteData.home.hero.sliderImages);
+  showToast('➕ Preset added back to slider!', 'success');
+}
+
+function restoreAllHeroPresets() {
+  if (!siteData.home.hero.sliderImages) siteData.home.hero.sliderImages = [];
+  DEFAULT_HERO_PRESET_IMAGES.forEach(preset => {
+    if (!siteData.home.hero.sliderImages.includes(preset)) {
+      siteData.home.hero.sliderImages.push(preset);
+    }
+  });
+  renderHeroSliderImages(siteData.home.hero.sliderImages);
+  showToast('➕ All presets restored to slider!', 'success');
+}
+
 
 function renderStats(stats) {
   const container = document.getElementById('stats-container');

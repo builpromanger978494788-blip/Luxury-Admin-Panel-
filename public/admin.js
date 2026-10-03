@@ -803,6 +803,69 @@ function getProjectFolder(category) {
   return map[category] || 'images';
 }
 
+async function uploadFounderImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  showLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'founder');
+
+    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
+    const result = await response.json();
+
+    if (result.success) {
+      if (!siteData.about) siteData.about = {};
+      if (!siteData.about.founder) siteData.about.founder = {};
+      siteData.about.founder.image = result.url;
+      setValue('founder-image', result.url);
+      const prev = document.getElementById('founder-image-preview');
+      if (prev) prev.src = result.url;
+      showToast('☁️ Founder photo uploaded successfully!', 'success');
+    } else {
+      throw new Error(result.error || 'Upload failed');
+    }
+  } catch (err) {
+    showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
+  }
+}
+
+async function uploadTeamMemberImage(input, index) {
+  const file = input.files[0];
+  if (!file) return;
+  showLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'team');
+
+    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
+    const result = await response.json();
+
+    if (result.success) {
+      if (!siteData.about) siteData.about = {};
+      if (!siteData.about.team) siteData.about.team = { members: [] };
+      if (!siteData.about.team.members) siteData.about.team.members = [];
+      if (siteData.about.team.members[index]) {
+        siteData.about.team.members[index].image = result.url;
+      }
+      renderTeamMembers(siteData.about.team.members);
+      showToast('☁️ Team member photo uploaded!', 'success');
+    } else {
+      throw new Error(result.error || 'Upload failed');
+    }
+  } catch (err) {
+    showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
+  }
+}
+
 // ═══════ ABOUT ═══════
 function populateAbout() {
   const a = siteData.about;
@@ -822,11 +885,11 @@ function populateAbout() {
       </div>
     </div>
   `).join('');
-  setValue('principles-label', a.principles.label);
-  setValue('principles-title-line1', a.principles.title_line1);
-  setValue('principles-title-em', a.principles.title_em);
+  setValue('principles-label', a.principles ? a.principles.label : '');
+  setValue('principles-title-line1', a.principles ? a.principles.title_line1 : '');
+  setValue('principles-title-em', a.principles ? a.principles.title_em : '');
   const prinContainer = document.getElementById('principles-container');
-  prinContainer.innerHTML = (a.principles.items || []).map((p, i) => `
+  prinContainer.innerHTML = ((a.principles && a.principles.items) || []).map((p, i) => `
     <div class="repeater-item">
       <div class="repeater-header"><h4><span class="repeater-num">${i + 1}</span> ${p.title}</h4></div>
       <div class="form-group"><label>Title</label>
@@ -837,39 +900,122 @@ function populateAbout() {
       </div>
     </div>
   `).join('');
-  renderTeamMembers(a.team || []);
+
+  // ── Founder Spotlight ──
+  const f = a.founder || {
+    name: "Ar. Sohan Mali",
+    role: "Founder & Principal Architect",
+    credentials: "B.Arch, COA Registered Architect",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+    quote: "Architecture is not merely about creating structures; it is the art of sculpting spaces that elevate human consciousness and create enduring memories.",
+    bio: "With over a decade of dedicated architectural practice, Ar. Sohan Mali has spearheaded benchmark residential, commercial, and heritage restoration projects across Maharashtra and beyond. Guided by the philosophy of timeless aesthetics and functional purity, his work seamlessly bridges traditional craftsmanship with contemporary innovation."
+  };
+  siteData.about.founder = f;
+  setValue('founder-name', f.name || '');
+  setValue('founder-role', f.role || '');
+  setValue('founder-credentials', f.credentials || '');
+  setValue('founder-image', f.image || '');
+  setValue('founder-quote', f.quote || '');
+  setValue('founder-bio', f.bio || '');
+  const founderPreview = document.getElementById('founder-image-preview');
+  if (founderPreview) {
+    founderPreview.src = f.image || 'images/placeholder.jpg';
+  }
+
+  // ── Team Members ──
+  const t = a.team || {
+    label: "The Studio",
+    title_line1: "Minds Behind the",
+    title_em: "Architecture",
+    description: "Our multidisciplinary studio brings together passionate architects, interior designers, and visualization specialists united by a commitment to spatial excellence and refined craftsmanship.",
+    members: [
+      {
+        name: "Ar. Ananya Deshmukh",
+        role: "Senior Associate Architect",
+        experience: "8+ Years Exp.",
+        image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+        bio: "Specializes in sustainable residential architecture, climate-responsive design, and master spatial planning."
+      },
+      {
+        name: "Rahul Verma",
+        role: "Lead Interior Designer",
+        experience: "6+ Years Exp.",
+        image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80",
+        bio: "Master of bespoke materiality, custom millwork, and warm, minimalist luxury interiors."
+      },
+      {
+        name: "Sneha Kulkarni",
+        role: "3D Architectural Visualizer",
+        experience: "5+ Years Exp.",
+        image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80",
+        bio: "Brings spatial blueprints to life with photorealistic rendering, lighting choreography, and digital walkthroughs."
+      },
+      {
+        name: "Vikram Rathore",
+        role: "Project & Site Engineer",
+        experience: "7+ Years Exp.",
+        image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80",
+        bio: "Ensures design intent translates flawlessly on site through rigorous engineering oversight and quality control."
+      }
+    ]
+  };
+  siteData.about.team = t;
+  setValue('team-label', t.label || '');
+  setValue('team-title-line1', t.title_line1 || '');
+  setValue('team-title-em', t.title_em || '');
+  setValue('team-description', t.description || '');
+
+  renderTeamMembers(t.members || []);
 }
 
-function renderTeamMembers(team) {
+function renderTeamMembers(members) {
   const container = document.getElementById('team-members-container');
   if (!container) return;
-  container.innerHTML = team.map((member, i) => `
-    <div class="repeater-item">
-      <div class="repeater-header">
-        <h4><span class="repeater-num">${i + 1}</span> ${escapeHtml(member.name || 'Team Member')}</h4>
-        <button class="btn-remove" onclick="removeTeamMember(${i})">🗑️</button>
+  if (!members || members.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No team members added yet. Click "+ Add Team Member" to create one.</p></div>';
+    return;
+  }
+  container.innerHTML = members.map((m, i) => `
+    <div class="repeater-item" style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;background:var(--bg-secondary);">
+      <div class="repeater-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="margin:0;font-size:0.95rem;display:flex;align-items:center;gap:8px;">
+          <span class="repeater-num" style="background:var(--primary);color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;">${i + 1}</span>
+          ${escapeHtml(m.name || 'Member ' + (i + 1))}
+          ${m.role ? `<span style="font-weight:normal;font-size:0.8rem;color:var(--text-muted);">— ${escapeHtml(m.role)}</span>` : ''}
+        </h4>
+        <button class="btn btn-sm btn-danger" onclick="removeTeamMember(${i})" title="Remove Member">🗑️ Remove</button>
       </div>
+
+      <div style="display:flex;gap:16px;margin-bottom:12px;align-items:flex-start;flex-wrap:wrap;">
+        <img id="team-img-preview-${i}" src="${escapeAttr(m.image || 'images/placeholder.jpg')}" style="width:70px;height:85px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);" onerror="this.src='images/placeholder.jpg'" />
+        <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px;">
+          <label style="font-size:0.8rem;font-weight:600;">Member Photo</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" value="${escapeAttr(m.image || '')}" onchange="siteData.about.team.members[${i}].image=this.value; const el=document.getElementById('team-img-preview-${i}'); if(el) el.src=this.value;" placeholder="Image URL / Cloudinary URL" style="flex:1;">
+            <label class="btn btn-sm btn-primary" style="margin:0;cursor:pointer;white-space:nowrap;color:#ffffff !important;">
+              📁 Upload Photo
+              <input type="file" accept="image/*" onchange="uploadTeamMemberImage(this, ${i})" style="display:none;">
+            </label>
+          </div>
+        </div>
+      </div>
+
       <div class="form-grid">
         <div class="form-group">
-          <label>Name</label>
-          <input type="text" value="${escapeAttr(member.name)}" onchange="siteData.about.team[${i}].name=this.value">
+          <label>Full Name</label>
+          <input type="text" value="${escapeAttr(m.name || '')}" onchange="siteData.about.team.members[${i}].name=this.value" placeholder="e.g. Ar. Ananya Deshmukh">
         </div>
         <div class="form-group">
-          <label>Role</label>
-          <input type="text" value="${escapeAttr(member.role)}" onchange="siteData.about.team[${i}].role=this.value">
+          <label>Role / Designation</label>
+          <input type="text" value="${escapeAttr(m.role || '')}" onchange="siteData.about.team.members[${i}].role=this.value" placeholder="e.g. Senior Associate Architect">
         </div>
         <div class="form-group form-full">
-          <label>Image (Upload to Cloudinary)</label>
-          <div style="display:flex;gap:14px;align-items:center;margin-top:8px;">
-            <img src="${getImageUrl(member.image)}" style="width:60px;height:60px;object-fit:cover;border-radius:50%;border:1px solid var(--border);" onerror="this.src='images/placeholder.jpg'" />
-            <div style="flex:1;display:flex;gap:8px;align-items:center;">
-              <input type="text" value="${escapeAttr(member.image)}" onchange="siteData.about.team[${i}].image=this.value" placeholder="Image URL">
-              <label class="btn btn-sm btn-primary" style="margin:0;cursor:pointer;white-space:nowrap;">
-                📁 Upload Image
-                <input type="file" accept="image/*" onchange="uploadTeamImage(this, ${i})" style="display:none;">
-              </label>
-            </div>
-          </div>
+          <label>Experience Badge (Optional)</label>
+          <input type="text" value="${escapeAttr(m.experience || '')}" onchange="siteData.about.team.members[${i}].experience=this.value" placeholder="e.g. 8+ Years Exp.">
+        </div>
+        <div class="form-group form-full">
+          <label>Bio / Specialization</label>
+          <textarea rows="2" onchange="siteData.about.team.members[${i}].bio=this.value" placeholder="Brief description of their architectural expertise...">${escapeHtml(m.bio || '')}</textarea>
         </div>
       </div>
     </div>
@@ -877,44 +1023,25 @@ function renderTeamMembers(team) {
 }
 
 function addTeamMember() {
-  if (!siteData.about.team) siteData.about.team = [];
-  siteData.about.team.push({ name: 'New Member', role: 'Role', image: 'images/placeholder.jpg' });
-  renderTeamMembers(siteData.about.team);
-  showToast('New team member added', 'success');
+  if (!siteData.about) siteData.about = {};
+  if (!siteData.about.team) siteData.about.team = { members: [] };
+  if (!siteData.about.team.members) siteData.about.team.members = [];
+  siteData.about.team.members.push({
+    name: 'New Team Member',
+    role: 'Associate Architect',
+    experience: '3+ Years Exp.',
+    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    bio: 'Dedicated to architectural design and spatial innovation.'
+  });
+  renderTeamMembers(siteData.about.team.members);
+  showToast('➕ New team member card added! Fill in their details and click Save.', 'info');
 }
 
 function removeTeamMember(i) {
-  if (confirm('Remove this team member?')) {
-    siteData.about.team.splice(i, 1);
-    renderTeamMembers(siteData.about.team);
-    showToast('Team member removed', 'info');
-  }
-}
-
-async function uploadTeamImage(input, i) {
-  const file = input.files[0];
-  if (!file) return;
-  showLoading(true);
-  try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', 'team');
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      siteData.about.team[i].image = result.url;
-      renderTeamMembers(siteData.about.team);
-      showToast('☁️ Team image uploaded!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
-  } catch (err) {
-    showToast('Upload failed: ' + err.message, 'error');
-  } finally {
-    input.value = '';
-    showLoading(false);
+  if (confirm('Are you sure you want to remove this team member?')) {
+    siteData.about.team.members.splice(i, 1);
+    renderTeamMembers(siteData.about.team.members);
+    showToast('Team member removed from list', 'info');
   }
 }
 
@@ -1133,9 +1260,24 @@ function collectFormData(section) {
       siteData.about.lead = getValue('about-lead');
       siteData.about.text1 = getValue('about-text1');
       siteData.about.text2 = getValue('about-text2');
+      if (!siteData.about.principles) siteData.about.principles = { items: [] };
       siteData.about.principles.label = getValue('principles-label');
       siteData.about.principles.title_line1 = getValue('principles-title-line1');
       siteData.about.principles.title_em = getValue('principles-title-em');
+
+      if (!siteData.about.founder) siteData.about.founder = {};
+      siteData.about.founder.name = getValue('founder-name');
+      siteData.about.founder.role = getValue('founder-role');
+      siteData.about.founder.credentials = getValue('founder-credentials');
+      siteData.about.founder.image = getValue('founder-image');
+      siteData.about.founder.quote = getValue('founder-quote');
+      siteData.about.founder.bio = getValue('founder-bio');
+
+      if (!siteData.about.team) siteData.about.team = { members: [] };
+      siteData.about.team.label = getValue('team-label');
+      siteData.about.team.title_line1 = getValue('team-title-line1');
+      siteData.about.team.title_em = getValue('team-title-em');
+      siteData.about.team.description = getValue('team-description');
       break;
     case 'services':
       siteData.services.label = getValue('svc-page-label');

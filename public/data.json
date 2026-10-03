@@ -37,7 +37,51 @@
       }
     ],
     "text1": "Architecture Studio was founded in 2006 with a singular conviction: that the spaces we inhabit shape who we become. From our studios in New York, Oslo, and Milan, we've spent nearly two decades translating this belief into homes, towers, and interiors that endure.",
-    "text2": "Our practice is built on deep collaboration — with clients, with craftspeople, with the contexts in which we work. We listen before we design, and we design before we draw."
+    "text2": "Our practice is built on deep collaboration — with clients, with craftspeople, with the contexts in which we work. We listen before we design, and we design before we draw.",
+    "founder": {
+      "name": "Ar. Sohan Mali",
+      "role": "Founder & Principal Architect",
+      "credentials": "B.Arch, COA Registered Architect",
+      "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80",
+      "quote": "Architecture is not merely about creating structures; it is the art of sculpting spaces that elevate human consciousness and create enduring memories.",
+      "bio": "With over a decade of dedicated architectural practice, Ar. Sohan Mali has spearheaded benchmark residential, commercial, and heritage restoration projects across Maharashtra and beyond. Guided by the philosophy of timeless aesthetics and functional purity, his work seamlessly bridges traditional craftsmanship with contemporary innovation."
+    },
+    "team": {
+      "label": "The Studio",
+      "title_line1": "Minds Behind the",
+      "title_em": "Architecture",
+      "description": "Our multidisciplinary studio brings together passionate architects, interior designers, and visualization specialists united by a commitment to spatial excellence and refined craftsmanship.",
+      "members": [
+        {
+          "name": "Ar. Ananya Deshmukh",
+          "role": "Senior Associate Architect",
+          "experience": "8+ Years Exp.",
+          "image": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=80",
+          "bio": "Specializes in sustainable residential architecture, climate-responsive design, and master spatial planning."
+        },
+        {
+          "name": "Rahul Verma",
+          "role": "Lead Interior Designer",
+          "experience": "6+ Years Exp.",
+          "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80",
+          "bio": "Master of bespoke materiality, custom millwork, and warm, minimalist luxury interiors."
+        },
+        {
+          "name": "Sneha Kulkarni",
+          "role": "3D Architectural Visualizer",
+          "experience": "5+ Years Exp.",
+          "image": "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=600&q=80",
+          "bio": "Brings spatial blueprints to life with photorealistic rendering, lighting choreography, and digital walkthroughs."
+        },
+        {
+          "name": "Vikram Rathore",
+          "role": "Project & Site Engineer",
+          "experience": "7+ Years Exp.",
+          "image": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=600&q=80",
+          "bio": "Ensures design intent translates flawlessly on site through rigorous engineering oversight and quality control."
+        }
+      ]
+    }
   },
   "contact": {
     "budget_options": [

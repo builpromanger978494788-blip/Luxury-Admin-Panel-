@@ -191,13 +191,26 @@ body {
 
 .btn:hover { background: var(--bg); border-color: #d1d5db; }
 
-.btn-primary {
+.btn-primary,
+.form-group label.btn,
+.form-group label.btn-primary,
+label.btn.btn-primary,
+label.btn-primary,
+label.btn {
   background: var(--accent);
-  color: #fff;
+  color: #ffffff !important;
   border-color: var(--accent);
 }
 
-.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-primary:hover,
+.form-group label.btn-primary:hover,
+label.btn.btn-primary:hover,
+label.btn-primary:hover,
+label.btn:hover {
+  background: var(--accent-hover);
+  color: #ffffff !important;
+  border-color: var(--accent-hover);
+}
 
 .btn-success {
   background: var(--green);
@@ -297,7 +310,7 @@ body {
 .form-group { margin-bottom: 20px; }
 .form-group:last-child { margin-bottom: 0; }
 
-.form-group label {
+.form-group label:not(.btn) {
   display: block;
   font-size: 0.78rem;
   font-weight: 500;

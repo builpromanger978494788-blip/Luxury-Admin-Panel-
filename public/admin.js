@@ -205,6 +205,9 @@ function populateHome() {
   setValue('phil-title-line1', h.philosophy.title_line1);
   setValue('phil-title-em', h.philosophy.title_em);
   setValue('phil-text', h.philosophy.text);
+  setValue('phil-image', h.philosophy.image || 'images/homepage5.jpeg');
+  const philPrev = document.getElementById('phil-image-preview');
+  if (philPrev) philPrev.src = h.philosophy.image || 'images/homepage5.jpeg';
   setValue('process-label', h.process.label);
   setValue('process-title-line1', h.process.title_line1);
   setValue('process-title-em', h.process.title_em);
@@ -765,6 +768,36 @@ async function uploadFeaturedToCloudinary(input, cardIndex) {
   showLoading(false);
 }
 
+async function uploadPhilosophyImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  showLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'philosophy');
+
+    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
+    const result = await response.json();
+
+    if (result.success) {
+      if (!siteData.home.philosophy) siteData.home.philosophy = {};
+      siteData.home.philosophy.image = result.url;
+      setValue('phil-image', result.url);
+      const prev = document.getElementById('phil-image-preview');
+      if (prev) prev.src = result.url;
+      showToast('☁️ Philosophy Image uploaded successfully!', 'success');
+    } else {
+      throw new Error(result.error || 'Upload failed');
+    }
+  } catch (err) {
+    showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
+  }
+}
+
 function getProjectFolder(category) {
   const map = { architecture: 'arch', interior: 'interior', residential: 'red', renovation: 'ren', rekhatan: 'paint' };
   return map[category] || 'images';
@@ -804,6 +837,85 @@ function populateAbout() {
       </div>
     </div>
   `).join('');
+  renderTeamMembers(a.team || []);
+}
+
+function renderTeamMembers(team) {
+  const container = document.getElementById('team-members-container');
+  if (!container) return;
+  container.innerHTML = team.map((member, i) => `
+    <div class="repeater-item">
+      <div class="repeater-header">
+        <h4><span class="repeater-num">${i + 1}</span> ${escapeHtml(member.name || 'Team Member')}</h4>
+        <button class="btn-remove" onclick="removeTeamMember(${i})">🗑️</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" value="${escapeAttr(member.name)}" onchange="siteData.about.team[${i}].name=this.value">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <input type="text" value="${escapeAttr(member.role)}" onchange="siteData.about.team[${i}].role=this.value">
+        </div>
+        <div class="form-group form-full">
+          <label>Image (Upload to Cloudinary)</label>
+          <div style="display:flex;gap:14px;align-items:center;margin-top:8px;">
+            <img src="${getImageUrl(member.image)}" style="width:60px;height:60px;object-fit:cover;border-radius:50%;border:1px solid var(--border);" onerror="this.src='images/placeholder.jpg'" />
+            <div style="flex:1;display:flex;gap:8px;align-items:center;">
+              <input type="text" value="${escapeAttr(member.image)}" onchange="siteData.about.team[${i}].image=this.value" placeholder="Image URL">
+              <label class="btn btn-sm btn-primary" style="margin:0;cursor:pointer;white-space:nowrap;">
+                📁 Upload Image
+                <input type="file" accept="image/*" onchange="uploadTeamImage(this, ${i})" style="display:none;">
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addTeamMember() {
+  if (!siteData.about.team) siteData.about.team = [];
+  siteData.about.team.push({ name: 'New Member', role: 'Role', image: 'images/placeholder.jpg' });
+  renderTeamMembers(siteData.about.team);
+  showToast('New team member added', 'success');
+}
+
+function removeTeamMember(i) {
+  if (confirm('Remove this team member?')) {
+    siteData.about.team.splice(i, 1);
+    renderTeamMembers(siteData.about.team);
+    showToast('Team member removed', 'info');
+  }
+}
+
+async function uploadTeamImage(input, i) {
+  const file = input.files[0];
+  if (!file) return;
+  showLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'team');
+
+    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
+    const result = await response.json();
+
+    if (result.success) {
+      siteData.about.team[i].image = result.url;
+      renderTeamMembers(siteData.about.team);
+      showToast('☁️ Team image uploaded!', 'success');
+    } else {
+      throw new Error(result.error || 'Upload failed');
+    }
+  } catch (err) {
+    showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
+  }
 }
 
 // ═══════ SERVICES ═══════
@@ -1010,6 +1122,7 @@ function collectFormData(section) {
       siteData.home.philosophy.title_line1 = getValue('phil-title-line1');
       siteData.home.philosophy.title_em = getValue('phil-title-em');
       siteData.home.philosophy.text = getValue('phil-text');
+      siteData.home.philosophy.image = getValue('phil-image');
       siteData.home.process.label = getValue('process-label');
       siteData.home.process.title_line1 = getValue('process-title-line1');
       siteData.home.process.title_em = getValue('process-title-em');

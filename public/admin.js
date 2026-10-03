@@ -679,10 +679,13 @@ function addProject() {
 }
 
 function removeProject(i) {
-  if (confirm('Delete this project?')) {
+  const p = (siteData.projects || [])[i];
+  const pTitle = (p && p.title) ? `"${p.title}"` : 'this project';
+  if (confirm(`Are you sure you want to delete ${pTitle}?`)) {
     siteData.projects.splice(i, 1);
     renderProjectsList();
-    showToast('Project removed', 'success');
+    updateDashboard();
+    showToast('Project removed successfully', 'success');
   }
 }
 
@@ -1038,7 +1041,9 @@ function addTeamMember() {
 }
 
 function removeTeamMember(i) {
-  if (confirm('Are you sure you want to remove this team member?')) {
+  const m = siteData.about?.team?.members?.[i];
+  const mName = (m && m.name) ? `"${m.name}"` : 'this team member';
+  if (confirm(`Are you sure you want to remove ${mName}?`)) {
     siteData.about.team.members.splice(i, 1);
     renderTeamMembers(siteData.about.team.members);
     showToast('Team member removed from list', 'info');
@@ -1053,24 +1058,9 @@ function populateServices() {
   setValue('svc-page-title-line1', s.title_line1);
   setValue('svc-page-title-em', s.title_em);
   setValue('svc-page-desc', s.description);
-  const container = document.getElementById('services-container');
-  container.innerHTML = (s.items || []).map((svc, i) => `
-    <div class="repeater-item">
-      <div class="repeater-header"><h4><span class="repeater-num">${svc.number}</span> ${svc.title}</h4></div>
-      <div class="form-grid">
-        <div class="form-group"><label>Number</label>
-          <input type="text" value="${escapeAttr(svc.number)}" onchange="siteData.services.items[${i}].number=this.value"></div>
-        <div class="form-group"><label>Icon (emoji)</label>
-          <input type="text" value="${escapeAttr(svc.icon)}" onchange="siteData.services.items[${i}].icon=this.value"></div>
-        <div class="form-group"><label>Title</label>
-          <input type="text" value="${escapeAttr(svc.title)}" onchange="siteData.services.items[${i}].title=this.value"></div>
-        <div class="form-group form-full"><label>Description</label>
-          <textarea rows="2" onchange="siteData.services.items[${i}].text=this.value">${escapeHtml(svc.text)}</textarea></div>
-        <div class="form-group form-full"><label>Features (one per line)</label>
-          <textarea rows="4" onchange="siteData.services.items[${i}].features=this.value.split('\\n').filter(x=>x.trim())">${(svc.features||[]).join('\n')}</textarea></div>
-      </div>
-    </div>
-  `).join('');
+
+  renderServices(s.items || []);
+
   if (s.cta) {
     setValue('cta-label', s.cta.label);
     setValue('cta-title-line1', s.cta.title_line1);
@@ -1080,6 +1070,94 @@ function populateServices() {
     setValue('cta-button', s.cta.button);
   }
 }
+
+function renderServices(items) {
+  const container = document.getElementById('services-container');
+  if (!container) return;
+  if (!items || items.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:24px;"><p>No services added yet. Click "+ Add Service" to create one.</p></div>';
+    return;
+  }
+  container.innerHTML = items.map((svc, i) => `
+    <div class="repeater-item" id="service-card-${i}" style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;background:var(--bg-secondary);">
+      <div class="repeater-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h4 style="margin:0;font-size:0.95rem;display:flex;align-items:center;gap:8px;">
+          <span class="repeater-num" style="background:var(--primary);color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;">${escapeHtml(svc.number || (i < 9 ? '0' + (i + 1) : String(i + 1)))}</span>
+          <span id="service-title-display-${i}">${escapeHtml(svc.title || 'Service ' + (i + 1))}</span>
+          <span id="service-icon-display-${i}" style="font-size:1.1rem;margin-left:4px;">${svc.icon ? escapeHtml(svc.icon) : ''}</span>
+        </h4>
+        <button type="button" class="btn btn-sm btn-danger" onclick="removeService(${i})" title="Remove Service" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">🗑️ Remove</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Number</label>
+          <input type="text" value="${escapeAttr(svc.number || '')}" oninput="siteData.services.items[${i}].number=this.value" placeholder="e.g. 01">
+        </div>
+        <div class="form-group">
+          <label>Icon (emoji / symbol)</label>
+          <input type="text" value="${escapeAttr(svc.icon || '')}" oninput="siteData.services.items[${i}].icon=this.value; const ic=document.getElementById('service-icon-display-${i}'); if(ic) ic.textContent=this.value;" placeholder="e.g. 🏛️, 📐, ✦, ◈, 🌿">
+        </div>
+        <div class="form-group form-full">
+          <label>Title</label>
+          <input type="text" value="${escapeAttr(svc.title || '')}" oninput="siteData.services.items[${i}].title=this.value; const td=document.getElementById('service-title-display-${i}'); if(td) td.textContent=this.value || ('Service ' + (${i} + 1));" placeholder="e.g. Architectural Planning">
+        </div>
+        <div class="form-group form-full">
+          <label>Description</label>
+          <textarea rows="3" oninput="siteData.services.items[${i}].text=this.value" placeholder="Detailed service description...">${escapeHtml(svc.text || '')}</textarea>
+        </div>
+        <div class="form-group form-full">
+          <label>Features / Deliverables (one per line)</label>
+          <textarea rows="4" oninput="siteData.services.items[${i}].features=this.value.split('\\n').filter(x=>x.trim())" placeholder="Feature 1\\nFeature 2\\nFeature 3">${(svc.features || []).join('\n')}</textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addService() {
+  if (!siteData.services) siteData.services = {};
+  if (!siteData.services.items) siteData.services.items = [];
+  const nextCount = siteData.services.items.length + 1;
+  const nextNum = nextCount < 10 ? '0' + nextCount : String(nextCount);
+  const sampleIcons = ['🏛️', '📐', '✦', '◈', '🌿', '💡', '🏗️', '🎨', '⚙️', '🔍'];
+  const nextIcon = sampleIcons[(nextCount - 1) % sampleIcons.length];
+
+  siteData.services.items.push({
+    number: nextNum,
+    icon: nextIcon,
+    title: 'New Service ' + nextNum,
+    text: 'We deliver comprehensive architectural solutions crafted with precision and innovative design principles.',
+    features: [
+      'Initial consultation & spatial assessment',
+      'Concept schematic design & drafting',
+      'Material specification & coordination',
+      'Final project execution & handover'
+    ]
+  });
+
+  renderServices(siteData.services.items);
+  updateDashboard();
+  showToast('➕ New service #' + nextNum + ' added! Edit details and click Save.', 'info');
+}
+
+function removeService(i) {
+  if (!siteData.services || !Array.isArray(siteData.services.items)) {
+    console.error('siteData.services.items is not available');
+    return;
+  }
+  const svc = siteData.services.items[i];
+  const svcTitle = (svc && svc.title) ? `"${svc.title}"` : 'this service';
+
+  if (window.confirm(`Are you sure you want to remove ${svcTitle}?`)) {
+    siteData.services.items.splice(i, 1);
+    renderServices(siteData.services.items);
+    updateDashboard();
+    showToast('Service removed successfully. Click "Save Services" to apply changes.', 'success');
+  }
+}
+
+window.addService = addService;
+window.removeService = removeService;
 
 // ═══════ CONTACT ═══════
 function populateContact() {
@@ -1370,12 +1448,12 @@ function getValue(id) {
   return el ? el.value : '';
 }
 function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 function escapeAttr(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 function showLoading(show) {
   document.getElementById('loadingOverlay').classList.toggle('show', show);

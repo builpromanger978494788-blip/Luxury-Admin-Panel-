@@ -333,6 +333,22 @@
           <div class="card-header"><h3>Hero Section</h3></div>
           <div class="card-body">
             <div class="form-grid">
+              <div class="form-group form-full">
+                <label>Hero Sketch Image</label>
+                <div style="display:flex;gap:16px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+                  <img id="about-image-preview" src="" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);" onerror="this.src='images/placeholder.jpg'" />
+                  <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <input type="text" id="about-image" placeholder="Image URL (Cloudinary or local)" onchange="document.getElementById('about-image-preview').src = this.value" style="flex:1;">
+                      <label class="btn btn-sm btn-primary" style="margin:0;cursor:pointer;white-space:nowrap;color:#ffffff !important;">
+                        📁 Upload Photo
+                        <input type="file" accept="image/*" onchange="uploadAboutImage(this)" style="display:none;">
+                      </label>
+                    </div>
+                    <span style="font-size:0.75rem;color:var(--text-muted);">Upload photo directly to Cloudinary or paste image URL</span>
+                  </div>
+                </div>
+              </div>
               <div class="form-group">
                 <label>Section Label</label>
                 <input type="text" id="about-label">
@@ -359,7 +375,10 @@
         </div>
 
         <div class="card">
-          <div class="card-header"><h3>Principles</h3></div>
+          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <h3>Principles</h3>
+            <button class="btn btn-sm btn-primary" onclick="addPrinciple()">+ Add Principle</button>
+          </div>
           <div class="card-body">
             <div class="form-grid" style="margin-bottom:16px;">
               <div class="form-group">

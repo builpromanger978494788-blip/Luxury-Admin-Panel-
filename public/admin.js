@@ -873,6 +873,9 @@ async function uploadTeamMemberImage(input, index) {
 function populateAbout() {
   const a = siteData.about;
   if (!a) return;
+  setValue('about-image', a.image || '');
+  const aboutPreview = document.getElementById('about-image-preview');
+  if (aboutPreview) aboutPreview.src = a.image || 'images/placeholder.jpg';
   setValue('about-label', a.label);
   setValue('about-lead', a.lead);
   setValue('about-text1', a.text1);
@@ -891,18 +894,9 @@ function populateAbout() {
   setValue('principles-label', a.principles ? a.principles.label : '');
   setValue('principles-title-line1', a.principles ? a.principles.title_line1 : '');
   setValue('principles-title-em', a.principles ? a.principles.title_em : '');
-  const prinContainer = document.getElementById('principles-container');
-  prinContainer.innerHTML = ((a.principles && a.principles.items) || []).map((p, i) => `
-    <div class="repeater-item">
-      <div class="repeater-header"><h4><span class="repeater-num">${i + 1}</span> ${p.title}</h4></div>
-      <div class="form-group"><label>Title</label>
-        <input type="text" value="${escapeAttr(p.title)}" onchange="siteData.about.principles.items[${i}].title=this.value">
-      </div>
-      <div class="form-group"><label>Description</label>
-        <textarea rows="3" onchange="siteData.about.principles.items[${i}].text=this.value">${escapeHtml(p.text)}</textarea>
-      </div>
-    </div>
-  `).join('');
+  if (!a.principles) a.principles = { items: [] };
+  if (!a.principles.items) a.principles.items = [];
+  renderPrinciples(a.principles.items);
 
   // ── Founder Spotlight ──
   const f = a.founder || {
@@ -1047,6 +1041,64 @@ function removeTeamMember(i) {
     siteData.about.team.members.splice(i, 1);
     renderTeamMembers(siteData.about.team.members);
     showToast('Team member removed from list', 'info');
+  }
+}
+
+// ── Principles Logic ──
+function renderPrinciples(items) {
+  const container = document.getElementById('principles-container');
+  if (!container) return;
+  container.innerHTML = items.map((p, i) => `
+    <div class="repeater-item">
+      <div class="repeater-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h4><span class="repeater-num">${i + 1}</span> ${escapeHtml(p.title || 'New Principle')}</h4>
+        <button class="btn btn-sm btn-danger" onclick="removePrinciple(${i})" style="padding:4px 8px;font-size:0.8rem;background:var(--danger);color:#fff;border:none;border-radius:4px;cursor:pointer;">🗑️ Remove</button>
+      </div>
+      <div class="form-group"><label>Title</label>
+        <input type="text" value="${escapeAttr(p.title)}" onchange="siteData.about.principles.items[${i}].title=this.value">
+      </div>
+      <div class="form-group"><label>Description</label>
+        <textarea rows="3" onchange="siteData.about.principles.items[${i}].text=this.value">${escapeHtml(p.text)}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addPrinciple() {
+  if (!siteData.about) siteData.about = {};
+  if (!siteData.about.principles) siteData.about.principles = { items: [] };
+  if (!siteData.about.principles.items) siteData.about.principles.items = [];
+  siteData.about.principles.items.push({
+    title: "New Principle",
+    text: "Description goes here..."
+  });
+  renderPrinciples(siteData.about.principles.items);
+  showToast('➕ New principle added!', 'info');
+}
+
+function removePrinciple(index) {
+  if (confirm("Are you sure you want to remove this principle?")) {
+    if (siteData.about && siteData.about.principles && siteData.about.principles.items) {
+      siteData.about.principles.items.splice(index, 1);
+      renderPrinciples(siteData.about.principles.items);
+      showToast('Principle removed', 'info');
+    }
+  }
+}
+
+async function uploadAboutImage(input) {
+  if (input.files && input.files[0]) {
+    try {
+      const result = await uploadToCloudinary(input.files[0]);
+      setValue('about-image', result.url);
+      const preview = document.getElementById('about-image-preview');
+      if (preview) preview.src = result.url;
+      if (!siteData.about) siteData.about = {};
+      siteData.about.image = result.url;
+      showToast('About hero image uploaded!', 'success');
+    } catch (err) {
+      showToast('Upload failed: ' + err.message, 'error');
+    }
   }
 }
 
@@ -1334,6 +1386,7 @@ function collectFormData(section) {
       siteData.home.testimonial.label = getValue('test-label');
       break;
     case 'about':
+      siteData.about.image = getValue('about-image');
       siteData.about.label = getValue('about-label');
       siteData.about.lead = getValue('about-lead');
       siteData.about.text1 = getValue('about-text1');

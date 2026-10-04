@@ -260,7 +260,7 @@
               <div class="form-group form-full" style="border-top:1px solid var(--border);padding-top:16px;margin-top:10px;">
                 <label>Philosophy Image (Right Frame)</label>
                 <div style="display:flex;gap:14px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                  <img id="phil-image-preview" src="images/homepage5.jpeg" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.src='images/placeholder.jpg'" />
+                  <img id="phil-image-preview" src="images/homepage5.jpeg" style="width:100px;height:75px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
                   <div style="flex:1;min-width:220px;display:flex;gap:8px;align-items:center;">
                     <input type="text" id="phil-image" placeholder="Image URL (e.g., images/homepage5.jpeg)" onchange="document.getElementById('phil-image-preview').src = this.value" style="flex:1;">
                     <label class="btn btn-sm btn-primary" style="margin:0;cursor:pointer;white-space:nowrap;color:#ffffff !important;">
@@ -336,7 +336,7 @@
               <div class="form-group form-full">
                 <label>Hero Sketch Image</label>
                 <div style="display:flex;gap:16px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                  <img id="about-image-preview" src="" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);" onerror="this.src='images/placeholder.jpg'" />
+                  <img id="about-image-preview" src="" style="width:140px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
                   <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
                     <div style="display:flex;gap:8px;align-items:center;">
                       <input type="text" id="about-image" placeholder="Image URL (Cloudinary or local)" onchange="document.getElementById('about-image-preview').src = this.value" style="flex:1;">
@@ -375,9 +375,8 @@
         </div>
 
         <div class="card">
-          <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div class="card-header">
             <h3>Principles</h3>
-            <button class="btn btn-sm btn-primary" onclick="addPrinciple()">+ Add Principle</button>
           </div>
           <div class="card-body">
             <div class="form-grid" style="margin-bottom:16px;">
@@ -395,6 +394,9 @@
               </div>
             </div>
             <div id="principles-container"></div>
+            <div style="margin-top:16px;text-align:left;">
+              <button class="btn btn-sm btn-primary" onclick="addPrinciple()">+ Add Principle</button>
+            </div>
           </div>
         </div>
 
@@ -421,7 +423,7 @@
               <div class="form-group form-full" style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px;">
                 <label>Founder Portrait Image</label>
                 <div style="display:flex;gap:16px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-                  <img id="founder-image-preview" src="" style="width:90px;height:115px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);" onerror="this.src='images/placeholder.jpg'" />
+                  <img id="founder-image-preview" src="" style="width:90px;height:115px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
                   <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:8px;">
                     <div style="display:flex;gap:8px;align-items:center;">
                       <input type="text" id="founder-image" placeholder="Image URL (Cloudinary or local)" onchange="document.getElementById('founder-image-preview').src = this.value" style="flex:1;">

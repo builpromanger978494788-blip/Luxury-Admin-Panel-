@@ -332,7 +332,7 @@ function renderHeroSliderImages(images) {
 
       return `
         <div class="slider-img-item">
-          <img src="${escapeAttr(img)}" class="slider-img-thumb" alt="Hero Slide ${i+1}" onerror="this.src='images/placeholder.jpg'" />
+          <img src="${escapeAttr(img)}" class="slider-img-thumb" alt="Hero Slide ${i+1}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
           <div class="slider-img-info">
             <div class="slider-img-badges">
               <span style="font-weight:600;font-size:0.85rem;color:var(--text-primary);">Slide ${i + 1}</span>
@@ -356,7 +356,7 @@ function renderHeroSliderImages(images) {
       if (presetList) {
         presetList.innerHTML = removedPresets.map((preset, idx) => `
           <div class="slider-img-item" style="opacity:0.9;background:var(--surface-hover);">
-            <img src="${escapeAttr(preset)}" class="slider-img-thumb" alt="Preset ${idx+1}" onerror="this.src='images/placeholder.jpg'" />
+            <img src="${escapeAttr(preset)}" class="slider-img-thumb" alt="Preset ${idx+1}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
             <div class="slider-img-info">
               <div class="slider-img-badges">
                 <span style="font-weight:600;font-size:0.85rem;color:var(--text-primary);">Default Studio Preset ${DEFAULT_HERO_PRESET_IMAGES.indexOf(preset) + 1}</span>
@@ -984,7 +984,7 @@ function renderTeamMembers(members) {
       </div>
 
       <div style="display:flex;gap:16px;margin-bottom:12px;align-items:flex-start;flex-wrap:wrap;">
-        <img id="team-img-preview-${i}" src="${escapeAttr(m.image || 'images/placeholder.jpg')}" style="width:70px;height:85px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);" onerror="this.src='images/placeholder.jpg'" />
+        <img id="team-img-preview-${i}" src="${escapeAttr(m.image || 'images/placeholder.jpg')}" style="width:70px;height:85px;object-fit:cover;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
         <div style="flex:1;min-width:220px;display:flex;flex-direction:column;gap:6px;">
           <label style="font-size:0.8rem;font-weight:600;">Member Photo</label>
           <div style="display:flex;gap:8px;">
@@ -1087,18 +1087,32 @@ function removePrinciple(index) {
 }
 
 async function uploadAboutImage(input) {
-  if (input.files && input.files[0]) {
-    try {
-      const result = await uploadToCloudinary(input.files[0]);
+  const file = input.files[0];
+  if (!file) return;
+  showLoading(true);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('folder', 'about');
+
+    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
+    const result = await response.json();
+
+    if (result.success) {
+      if (!siteData.about) siteData.about = {};
+      siteData.about.image = result.url;
       setValue('about-image', result.url);
       const preview = document.getElementById('about-image-preview');
       if (preview) preview.src = result.url;
-      if (!siteData.about) siteData.about = {};
-      siteData.about.image = result.url;
-      showToast('About hero image uploaded!', 'success');
-    } catch (err) {
-      showToast('Upload failed: ' + err.message, 'error');
+      showToast('☁️ About image uploaded successfully!', 'success');
+    } else {
+      throw new Error(result.error || 'Upload failed');
     }
+  } catch (err) {
+    showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
   }
 }
 

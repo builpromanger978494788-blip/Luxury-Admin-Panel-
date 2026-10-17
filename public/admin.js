@@ -377,84 +377,53 @@ function renderHeroSliderImages(images) {
   }
 }
 
-// ── Client-side Image Auto-Compressor ──
-// Compresses high-res camera/DSLR photos before sending to server to prevent Vercel 4.5MB request limit
-function compressImageIfNeeded(file, maxDimension = 2560, quality = 0.82) {
-  return new Promise((resolve) => {
-    if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
-      return resolve(file);
-    }
-
-    // Skip compression if file is already small (under 1.2MB)
-    if (file.size <= 1.2 * 1024 * 1024) {
-      return resolve(file);
-    }
-
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxDimension || height > maxDimension) {
-              if (width > height) {
-                height = Math.round((height * maxDimension) / width);
-                width = maxDimension;
-              } else {
-                width = Math.round((width * maxDimension) / height);
-                height = maxDimension;
-              }
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-
-            const outputType = 'image/jpeg';
-            canvas.toBlob((blob) => {
-              if (blob && blob.size < file.size) {
-                const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
-                const compressedFile = new File([blob], newName, {
-                  type: outputType,
-                  lastModified: Date.now()
-                });
-                console.log(`[Auto-Compress] Reduced "${file.name}" from ${(file.size / (1024*1024)).toFixed(2)}MB to ${(compressedFile.size / (1024*1024)).toFixed(2)}MB`);
-                resolve(compressedFile);
-              } else {
-                resolve(file);
-              }
-            }, outputType, quality);
-          } catch (canvasErr) {
-            console.warn('Canvas compression failed, falling back to original:', canvasErr);
-            resolve(file);
-          }
-        };
-        img.onerror = () => resolve(file);
-        img.src = e.target.result;
-      };
-      reader.onerror = () => resolve(file);
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.warn('FileReader failed, falling back to original:', err);
-      resolve(file);
-    }
-  });
-}
-
-// ── Unified Cloudinary Upload Function with Safe Error Handling ──
+// ── Direct Signed Upload to Cloudinary ──
+// Uploads directly from browser to Cloudinary CDN, bypassing Vercel 4.5MB limit entirely.
+// No canvas compression needed: allows files of any size (up to 100MB) without black/corrupt image glitches!
 async function uploadFileToCloudinary(file, folder = 'architecture_studio') {
   if (!file) throw new Error('No file selected');
 
-  // Auto-compress large files to prevent Vercel 4.5MB payload limit
-  const processedFile = await compressImageIfNeeded(file);
+  // Step 1: Request signature from server (lightweight GET request, ~50 bytes)
+  let signData;
+  try {
+    const signRes = await fetch(`${API}/cloudinary-sign?folder=${encodeURIComponent(folder)}`);
+    if (!signRes.ok) throw new Error(`Signature error (status ${signRes.status})`);
+    signData = await signRes.json();
+    if (!signData.signature) throw new Error(signData.error || 'Failed to obtain upload signature');
+  } catch (signErr) {
+    console.warn('Direct upload signing failed, falling back to server relay:', signErr);
+    return uploadViaServerRelay(file, folder);
+  }
 
+  // Step 2: Upload file directly to Cloudinary endpoint
   const formData = new FormData();
-  formData.append('image', processedFile);
+  formData.append('file', file);
+  formData.append('api_key', signData.api_key);
+  formData.append('timestamp', signData.timestamp);
+  formData.append('signature', signData.signature);
+  formData.append('folder', signData.folder);
+
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloud_name}/image/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  const uploadResult = await uploadRes.json();
+
+  if (!uploadRes.ok || !uploadResult.secure_url) {
+    const errText = uploadResult.error && uploadResult.error.message ? uploadResult.error.message : `Upload failed (Status ${uploadRes.status})`;
+    throw new Error(errText);
+  }
+
+  // Inject Cloudinary auto-optimization parameters into the URL
+  const optimizedUrl = uploadResult.secure_url.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
+  return optimizedUrl;
+}
+
+// Fallback upload via server
+async function uploadViaServerRelay(file, folder) {
+  const formData = new FormData();
+  formData.append('image', file);
   formData.append('folder', folder);
 
   const response = await fetch(`${API}/upload-cloudinary`, {
@@ -468,7 +437,7 @@ async function uploadFileToCloudinary(file, folder = 'architecture_studio') {
     result = JSON.parse(responseText);
   } catch (parseErr) {
     if (response.status === 413 || responseText.toLowerCase().includes('request entity too large')) {
-      throw new Error('Image file is too large for the server. Please select an image under 4MB.');
+      throw new Error('Image file exceeds server limit. Please ensure direct Cloudinary upload is accessible.');
     }
     throw new Error(responseText.slice(0, 150) || `Server error (${response.status})`);
   }

@@ -125,6 +125,30 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   });
 });
 
+// ── API: Cloudinary Upload Signature (Bypasses Vercel 4.5MB limit for direct browser upload) ──
+app.get('/api/cloudinary-sign', (req, res) => {
+  try {
+    const timestamp = Math.round(new Date().getTime() / 1000);
+    const folder = req.query.folder || 'architecture_studio';
+    const paramsToSign = {
+      folder: folder,
+      timestamp: timestamp
+    };
+    const signature = cloudinary.utils.api_sign_request(paramsToSign, '4gvrLIM4Hqzr8cB011_0qRrNzFc');
+    res.json({
+      success: true,
+      signature: signature,
+      timestamp: timestamp,
+      folder: folder,
+      api_key: '346288771123847',
+      cloud_name: 'dqnf1fel9'
+    });
+  } catch (err) {
+    console.error('Cloudinary signing error:', err);
+    res.status(500).json({ error: 'Failed to sign Cloudinary request: ' + err.message });
+  }
+});
+
 // ── API: Upload to Cloudinary ──
 app.post('/api/upload-cloudinary', upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });

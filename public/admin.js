@@ -657,17 +657,23 @@ function renderProjectsList() {
     return;
   }
   container.innerHTML = projects.map((p, i) => `
-    <div class="project-admin-card" id="proj-card-${i}">
+    <div class="project-admin-card" id="proj-card-${i}" data-index="${i}">
       <div class="project-admin-header">
+        <div class="project-drag-handle" title="Click & Drag (2 lines) to change sequence" data-index="${i}">
+          <span class="drag-line"></span>
+          <span class="drag-line"></span>
+        </div>
         <div class="project-admin-thumb">
           <img src="${getImageUrl(p.thumbnail)}" onerror="this.style.display='none'" alt="">
         </div>
         <div class="project-admin-info">
-          <h4>${escapeHtml(p.title)}</h4>
+          <h4><span style="font-size:0.75rem;color:var(--text-muted);font-weight:normal;margin-right:6px;">#${i + 1}</span>${escapeHtml(p.title)}</h4>
           <div class="cat">${p.category === 'rekhatan' ? 'रेखाटने' : p.category.charAt(0).toUpperCase() + p.category.slice(1)}</div>
         </div>
         <div class="project-admin-actions">
-          <button class="btn btn-sm" onclick="toggleProjectEdit(${i})">✏️ Edit</button>
+          <button class="btn-reorder" title="Move Up" onclick="moveProject(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▲</button>
+          <button class="btn-reorder" title="Move Down" onclick="moveProject(${i}, 1)" ${i === projects.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▼</button>
+          <button class="btn btn-sm btn-edit-proj" id="btn-edit-${i}" onclick="toggleProjectEdit(${i}, event)">✏️ Edit</button>
           <button class="btn btn-sm btn-danger" onclick="removeProject(${i})">🗑️</button>
         </div>
       </div>
@@ -709,9 +715,113 @@ function renderProjectsList() {
             <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Image will be uploaded to Cloudinary</p>
           </div>
         </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:12px; border-top:1px dashed var(--border-light); flex-wrap:wrap; gap:8px;">
+          <span style="font-size:0.75rem; color:var(--text-muted);">💡 Bahar click karke ya '✕ Close' button se is box ko hide kar sakte hain</span>
+          <button type="button" class="btn btn-sm" onclick="closeAllProjectEdits()">✕ Close Edit</button>
+        </div>
       </div>
     </div>
   `).join('');
+
+  initProjectDragAndDrop();
+}
+
+let draggedProjectIndex = null;
+function initProjectDragAndDrop() {
+  const cards = document.querySelectorAll('.project-admin-card');
+  cards.forEach(card => {
+    const handle = card.querySelector('.project-drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', () => {
+        card.setAttribute('draggable', 'true');
+      });
+      handle.addEventListener('touchstart', () => {
+        card.setAttribute('draggable', 'true');
+      }, { passive: true });
+    }
+
+    card.addEventListener('dragstart', (e) => {
+      draggedProjectIndex = parseInt(card.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(draggedProjectIndex));
+      card.classList.add('dragging');
+    });
+
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!card.classList.contains('dragging')) {
+        card.classList.add('drag-over');
+      }
+    });
+
+    card.addEventListener('dragleave', (e) => {
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drag-over');
+      }
+    });
+
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const targetIndex = parseInt(card.dataset.index);
+      if (draggedProjectIndex !== null && !isNaN(draggedProjectIndex) && draggedProjectIndex !== targetIndex) {
+        const [moved] = siteData.projects.splice(draggedProjectIndex, 1);
+        siteData.projects.splice(targetIndex, 0, moved);
+        renderProjectsList();
+        saveProjectsSequenceLive();
+      }
+    });
+
+    card.addEventListener('dragend', () => {
+      cards.forEach(c => {
+        c.classList.remove('dragging', 'drag-over');
+        c.setAttribute('draggable', 'false');
+      });
+      draggedProjectIndex = null;
+    });
+  });
+}
+
+function moveProject(index, direction) {
+  const targetIndex = index + direction;
+  if (!siteData.projects || targetIndex < 0 || targetIndex >= siteData.projects.length) return;
+  const [moved] = siteData.projects.splice(index, 1);
+  siteData.projects.splice(targetIndex, 0, moved);
+  renderProjectsList();
+  saveProjectsSequenceLive();
+}
+
+let projectSequenceTimeout = null;
+async function saveProjectsSequenceLive() {
+  showToast('🔄 Syncing project sequence live...', 'info');
+
+  // 1. Instant sync to Firebase RTDB (Live reflection on website)
+  try {
+    if (typeof db !== 'undefined' && db) {
+      const cleanProjects = JSON.parse(JSON.stringify(siteData.projects || []));
+      await db.ref('website/content/projects').set(cleanProjects);
+    }
+  } catch (fbErr) {
+    console.warn('Firebase sequence sync failed:', fbErr);
+  }
+
+  // 2. Debounced save to local/server data.json & publish
+  if (projectSequenceTimeout) clearTimeout(projectSequenceTimeout);
+  projectSequenceTimeout = setTimeout(async () => {
+    try {
+      await fetch(`${API}/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(siteData)
+      });
+      await fetch(`${API}/publish`, { method: 'POST' });
+    } catch (e) {
+      console.warn('Server save failed:', e);
+    }
+    showToast('✓ Project sequence updated live on website!', 'success');
+    updateDashboard();
+  }, 400);
 }
 
 function getImageUrl(path) {
@@ -720,21 +830,78 @@ function getImageUrl(path) {
   return `https://architectsohanmali.com/${path}`; // Fetch from live site
 }
 
-function toggleProjectEdit(i) {
-  document.getElementById('proj-edit-' + i).classList.toggle('open');
+function toggleProjectEdit(i, event) {
+  if (event) {
+    event.stopPropagation();
+  }
+  const editEl = document.getElementById('proj-edit-' + i);
+  const cardEl = document.getElementById('proj-card-' + i);
+  const btnEl = document.getElementById('btn-edit-' + i);
+  if (!editEl) return;
+
+  const wasOpen = editEl.classList.contains('open');
+
+  // Pehle kisi bhi dusre open project edit drawer ko band karo
+  closeAllProjectEdits();
+
+  if (!wasOpen) {
+    editEl.classList.add('open');
+    cardEl?.classList.add('is-editing');
+    if (btnEl) {
+      btnEl.innerHTML = '✕ Close';
+      btnEl.classList.add('btn-editing-active');
+    }
+  }
 }
+
+function closeAllProjectEdits() {
+  document.querySelectorAll('.collapsible-content.open').forEach(el => {
+    el.classList.remove('open');
+  });
+  document.querySelectorAll('.project-admin-card.is-editing').forEach(card => {
+    card.classList.remove('is-editing');
+  });
+  document.querySelectorAll('.btn-edit-proj').forEach(btn => {
+    btn.innerHTML = '✏️ Edit';
+    btn.classList.remove('btn-editing-active');
+  });
+}
+
+// Click outside open project card to collapse edit drawer
+document.addEventListener('click', (e) => {
+  const openEdit = document.querySelector('.collapsible-content.open');
+  if (!openEdit) return;
+
+  const openCard = openEdit.closest('.project-admin-card');
+  // Agar click usi open project card ke andar hua hai (input/select/buttons etc.)
+  if (openCard && openCard.contains(e.target)) {
+    return;
+  }
+
+  // Agar click project card ke bahar kahin bhi hua hai -> close it
+  closeAllProjectEdits();
+});
+
+// Esc key dabane par bhi open edit drawer collapse ho jaye
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeAllProjectEdits();
+  }
+});
 
 function addProject() {
   if (!siteData.projects) siteData.projects = [];
   const newId = siteData.projects.length > 0
     ? Math.max(...siteData.projects.map(p => p.id)) + 1 : 1;
-  siteData.projects.push({
+  // Place newly added project at the TOP (#1) so it's immediately prominent
+  siteData.projects.unshift({
     id: newId, title: 'New Project', category: 'architecture',
     description: 'Project description here.', thumbnail: '', images: []
   });
   renderProjectsList();
-  toggleProjectEdit(siteData.projects.length - 1);
-  showToast('New project added.', 'success');
+  toggleProjectEdit(0);
+  saveProjectsSequenceLive();
+  showToast('New project added at top! Drag handle (2 lines) to reorder anytime.', 'success');
 }
 
 function removeProject(i) {
@@ -743,6 +910,7 @@ function removeProject(i) {
   if (confirm(`Are you sure you want to delete ${pTitle}?`)) {
     siteData.projects.splice(i, 1);
     renderProjectsList();
+    saveProjectsSequenceLive();
     updateDashboard();
     showToast('Project removed successfully', 'success');
   }
@@ -1347,7 +1515,8 @@ async function saveSection(section) {
   try {
     // Save to Firebase RTDB
     try {
-      await db.ref('website/content').set(siteData);
+      const cleanData = JSON.parse(JSON.stringify(siteData));
+      await db.ref('website/content').set(cleanData);
     } catch (fbErr) {
       console.warn('Firebase save failed, proceeding with local save:', fbErr);
     }

@@ -657,10 +657,78 @@ label.btn:hover {
   padding: 20px;
   margin-bottom: 16px;
   background: var(--surface);
-  transition: box-shadow 0.2s var(--ease);
+  transition: box-shadow 0.2s var(--ease), transform 0.15s ease, border-color 0.15s ease;
 }
 
 .project-admin-card:hover { box-shadow: var(--shadow-md); }
+
+.project-admin-card.dragging {
+  opacity: 0.4;
+  transform: scale(0.98);
+  border: 1px dashed var(--accent);
+}
+
+.project-admin-card.drag-over {
+  border: 2px dashed var(--accent) !important;
+  background: rgba(197, 160, 89, 0.08);
+  transform: translateY(2px);
+}
+
+/* 2-Line Drag Handle */
+.project-drag-handle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 26px;
+  height: 42px;
+  cursor: grab;
+  padding: 6px 4px;
+  border-radius: 6px;
+  user-select: none;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.project-drag-handle:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.project-drag-handle:active {
+  cursor: grabbing;
+}
+
+.project-drag-handle .drag-line {
+  display: block;
+  width: 14px;
+  height: 2.5px;
+  background: currentColor;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.btn-reorder {
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  line-height: 1;
+  background: var(--bg);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-reorder:hover:not(:disabled) {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 .project-admin-header {
   display: flex;
@@ -704,9 +772,35 @@ label.btn:hover {
 }
 
 /* ── Collapsible ── */
+.project-admin-card.is-editing {
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(197, 160, 89, 0.15);
+}
+
+.btn-edit-proj.btn-editing-active {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
 .collapsible-content {
   display: none;
   padding-top: 16px;
+  border-top: 1px solid var(--border-light);
+  margin-top: 12px;
+  animation: projectDrawerFadeIn 0.2s ease-out;
+}
+
+@keyframes projectDrawerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .collapsible-content.open { display: block; }

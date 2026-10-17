@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Architecture Sohan Mali — Admin Panel</title>
+  <title>Architect Sohan Mali — Admin Panel</title>
   <link rel="icon" type="image/jpeg" href="favicon.jpg" />
   <link rel="stylesheet" href="style.css">
 </head>
@@ -315,8 +315,13 @@
 
       <!-- ═══════ PROJECTS ═══════ -->
       <div class="page-section" id="section-projects">
-        <div class="section-header">
-          <h2>Projects</h2>
+        <div class="section-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2>Projects</h2>
+            <p style="font-size:0.83rem; color:var(--text-muted); margin-top:4px;">
+              💡 <strong>Live Sequence:</strong> Har project ke left me <strong>2-lines (=)</strong> drag handle se uper-niche drag karein, ya <strong>▲ / ▼</strong> button dabayein. Website par live sequence turant change ho jata hai!
+            </p>
+          </div>
           <button class="btn btn-primary" onclick="addProject()">+ Add Project</button>
         </div>
         <div id="projects-list"></div>

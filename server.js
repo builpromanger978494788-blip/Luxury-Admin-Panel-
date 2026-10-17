@@ -352,6 +352,14 @@ app.post('/api/publish', (req, res) => {
   }
 });
 
+// Global error handler middleware (always return JSON for errors)
+app.use((err, req, res, next) => {
+  console.error('Unhandled server error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error'
+  });
+});
+
 // Start server locally (when not running inside Vercel serverless environment)
 let server;
 if (!isVercel) {

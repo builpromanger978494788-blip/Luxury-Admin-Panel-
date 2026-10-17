@@ -377,6 +377,109 @@ function renderHeroSliderImages(images) {
   }
 }
 
+// ── Client-side Image Auto-Compressor ──
+// Compresses high-res camera/DSLR photos before sending to server to prevent Vercel 4.5MB request limit
+function compressImageIfNeeded(file, maxDimension = 2560, quality = 0.82) {
+  return new Promise((resolve) => {
+    if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+      return resolve(file);
+    }
+
+    // Skip compression if file is already small (under 1.2MB)
+    if (file.size <= 1.2 * 1024 * 1024) {
+      return resolve(file);
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const outputType = 'image/jpeg';
+            canvas.toBlob((blob) => {
+              if (blob && blob.size < file.size) {
+                const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                const compressedFile = new File([blob], newName, {
+                  type: outputType,
+                  lastModified: Date.now()
+                });
+                console.log(`[Auto-Compress] Reduced "${file.name}" from ${(file.size / (1024*1024)).toFixed(2)}MB to ${(compressedFile.size / (1024*1024)).toFixed(2)}MB`);
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            }, outputType, quality);
+          } catch (canvasErr) {
+            console.warn('Canvas compression failed, falling back to original:', canvasErr);
+            resolve(file);
+          }
+        };
+        img.onerror = () => resolve(file);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.warn('FileReader failed, falling back to original:', err);
+      resolve(file);
+    }
+  });
+}
+
+// ── Unified Cloudinary Upload Function with Safe Error Handling ──
+async function uploadFileToCloudinary(file, folder = 'architecture_studio') {
+  if (!file) throw new Error('No file selected');
+
+  // Auto-compress large files to prevent Vercel 4.5MB payload limit
+  const processedFile = await compressImageIfNeeded(file);
+
+  const formData = new FormData();
+  formData.append('image', processedFile);
+  formData.append('folder', folder);
+
+  const response = await fetch(`${API}/upload-cloudinary`, {
+    method: 'POST',
+    body: formData
+  });
+
+  const responseText = await response.text();
+  let result;
+  try {
+    result = JSON.parse(responseText);
+  } catch (parseErr) {
+    if (response.status === 413 || responseText.toLowerCase().includes('request entity too large')) {
+      throw new Error('Image file is too large for the server. Please select an image under 4MB.');
+    }
+    throw new Error(responseText.slice(0, 150) || `Server error (${response.status})`);
+  }
+
+  if (!response.ok || !result.success || !result.url) {
+    throw new Error(result.error || `Upload failed with status ${response.status}`);
+  }
+
+  return result.url;
+}
+
 async function uploadHeroSliderFiles(files) {
   if (!files || files.length === 0) return;
   showLoading(true);
@@ -389,22 +492,9 @@ async function uploadHeroSliderFiles(files) {
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('folder', 'hero_slider');
-
-      const response = await fetch(`${API}/upload-cloudinary`, {
-        method: 'POST',
-        body: formData
-      });
-      const result = await response.json();
-
-      if (result.success && result.url) {
-        siteData.home.hero.sliderImages.push(result.url);
-        uploadCount++;
-      } else {
-        throw new Error(result.error || `Upload failed for ${file.name}`);
-      }
+      const url = await uploadFileToCloudinary(file, 'hero_slider');
+      siteData.home.hero.sliderImages.push(url);
+      uploadCount++;
     }
 
     renderHeroSliderImages(siteData.home.hero.sliderImages);
@@ -695,29 +785,18 @@ async function uploadImageToCloudinary(input, projIndex) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', getProjectFolder(siteData.projects[projIndex].category));
-
-    const response = await fetch(`${API}/upload-cloudinary`, {
-      method: 'POST',
-      body: formData
-    });
-    const result = await response.json();
-
-    if (result.success) {
-      siteData.projects[projIndex].images.push(result.url);
-      renderProjectsList();
-      toggleProjectEdit(projIndex);
-      showToast('☁️ Image uploaded to Cloudinary!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const url = await uploadFileToCloudinary(file, getProjectFolder(siteData.projects[projIndex].category));
+    siteData.projects[projIndex].images.push(url);
+    renderProjectsList();
+    toggleProjectEdit(projIndex);
+    showToast('☁️ Image uploaded to Cloudinary!', 'success');
   } catch (err) {
     console.error('Upload error:', err);
     showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
   }
-  showLoading(false);
 }
 
 async function uploadThumbnailToCloudinary(input, projIndex) {
@@ -725,25 +804,17 @@ async function uploadThumbnailToCloudinary(input, projIndex) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', getProjectFolder(siteData.projects[projIndex].category));
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      siteData.projects[projIndex].thumbnail = result.url;
-      renderProjectsList();
-      toggleProjectEdit(projIndex);
-      showToast('☁️ Thumbnail uploaded!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const url = await uploadFileToCloudinary(file, getProjectFolder(siteData.projects[projIndex].category));
+    siteData.projects[projIndex].thumbnail = url;
+    renderProjectsList();
+    toggleProjectEdit(projIndex);
+    showToast('☁️ Thumbnail uploaded!', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
   }
-  showLoading(false);
 }
 
 async function uploadFeaturedToCloudinary(input, cardIndex) {
@@ -751,24 +822,16 @@ async function uploadFeaturedToCloudinary(input, cardIndex) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', 'featured');
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      siteData.home.featured.cards[cardIndex].image = result.url;
-      populateHome();
-      showToast('☁️ Featured Image uploaded!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const url = await uploadFileToCloudinary(file, 'featured');
+    siteData.home.featured.cards[cardIndex].image = url;
+    populateHome();
+    showToast('☁️ Featured Image uploaded!', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+    showLoading(false);
   }
-  showLoading(false);
 }
 
 async function uploadPhilosophyImage(input) {
@@ -776,23 +839,13 @@ async function uploadPhilosophyImage(input) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', 'philosophy');
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      if (!siteData.home.philosophy) siteData.home.philosophy = {};
-      siteData.home.philosophy.image = result.url;
-      setValue('phil-image', result.url);
-      const prev = document.getElementById('phil-image-preview');
-      if (prev) prev.src = result.url;
-      showToast('☁️ Philosophy Image uploaded successfully!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const url = await uploadFileToCloudinary(file, 'philosophy');
+    if (!siteData.home.philosophy) siteData.home.philosophy = {};
+    siteData.home.philosophy.image = url;
+    setValue('phil-image', url);
+    const prev = document.getElementById('phil-image-preview');
+    if (prev) prev.src = url;
+    showToast('☁️ Philosophy Image uploaded successfully!', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
@@ -811,24 +864,14 @@ async function uploadFounderImage(input) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', 'founder');
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      if (!siteData.about) siteData.about = {};
-      if (!siteData.about.founder) siteData.about.founder = {};
-      siteData.about.founder.image = result.url;
-      setValue('founder-image', result.url);
-      const prev = document.getElementById('founder-image-preview');
-      if (prev) prev.src = result.url;
-      showToast('☁️ Founder photo uploaded successfully!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const url = await uploadFileToCloudinary(file, 'founder');
+    if (!siteData.about) siteData.about = {};
+    if (!siteData.about.founder) siteData.about.founder = {};
+    siteData.about.founder.image = url;
+    setValue('founder-image', url);
+    const prev = document.getElementById('founder-image-preview');
+    if (prev) prev.src = url;
+    showToast('☁️ Founder photo uploaded successfully!', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
@@ -842,25 +885,15 @@ async function uploadTeamMemberImage(input, index) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', 'team');
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      if (!siteData.about) siteData.about = {};
-      if (!siteData.about.team) siteData.about.team = { members: [] };
-      if (!siteData.about.team.members) siteData.about.team.members = [];
-      if (siteData.about.team.members[index]) {
-        siteData.about.team.members[index].image = result.url;
-      }
-      renderTeamMembers(siteData.about.team.members);
-      showToast('☁️ Team member photo uploaded!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
+    const url = await uploadFileToCloudinary(file, 'team');
+    if (!siteData.about) siteData.about = {};
+    if (!siteData.about.team) siteData.about.team = { members: [] };
+    if (!siteData.about.team.members) siteData.about.team.members = [];
+    if (siteData.about.team.members[index]) {
+      siteData.about.team.members[index].image = url;
     }
+    renderTeamMembers(siteData.about.team.members);
+    showToast('☁️ Team member photo uploaded!', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
@@ -1091,23 +1124,13 @@ async function uploadAboutImage(input) {
   if (!file) return;
   showLoading(true);
   try {
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('folder', 'about');
-
-    const response = await fetch(`${API}/upload-cloudinary`, { method: 'POST', body: formData });
-    const result = await response.json();
-
-    if (result.success) {
-      if (!siteData.about) siteData.about = {};
-      siteData.about.image = result.url;
-      setValue('about-image', result.url);
-      const preview = document.getElementById('about-image-preview');
-      if (preview) preview.src = result.url;
-      showToast('☁️ About image uploaded successfully!', 'success');
-    } else {
-      throw new Error(result.error || 'Upload failed');
-    }
+    const url = await uploadFileToCloudinary(file, 'about');
+    if (!siteData.about) siteData.about = {};
+    siteData.about.image = url;
+    setValue('about-image', url);
+    const preview = document.getElementById('about-image-preview');
+    if (preview) preview.src = url;
+    showToast('☁️ About image uploaded successfully!', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
   } finally {

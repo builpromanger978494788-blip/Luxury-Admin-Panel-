@@ -247,8 +247,44 @@ const DEFAULT_HERO_PRESET_IMAGES = [
   "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=80"
 ];
 
-function isPresetImage(url) {
+function getHeroSlideUrl(item) {
+  if (!item) return '';
+  if (typeof item === 'string') return item.trim();
+  if (typeof item === 'object' && item.url) return String(item.url).trim();
+  return '';
+}
+
+function getHeroSlideDuration(item) {
+  if (item && typeof item === 'object') {
+    const d = Number(item.duration);
+    if (!isNaN(d) && d > 0) return d;
+  }
+  return 4; // default 4 seconds
+}
+
+function isPresetImage(item) {
+  const url = getHeroSlideUrl(item);
   return DEFAULT_HERO_PRESET_IMAGES.includes(url);
+}
+
+function ensureHeroSliderNormalized() {
+  if (!siteData.home) siteData.home = {};
+  if (!siteData.home.hero) siteData.home.hero = {};
+  if (!Array.isArray(siteData.home.hero.sliderImages)) {
+    siteData.home.hero.sliderImages = [];
+  } else {
+    siteData.home.hero.sliderImages = siteData.home.hero.sliderImages.map(item => {
+      if (typeof item === 'string') {
+        return { url: item.trim(), duration: 4 };
+      }
+      if (item && typeof item === 'object') {
+        const url = typeof item.url === 'string' ? item.url.trim() : '';
+        const dur = Number(item.duration);
+        return { url, duration: !isNaN(dur) && dur > 0 ? dur : 4 };
+      }
+      return null;
+    }).filter(item => item && item.url);
+  }
 }
 
 function renderHeroSliderImages(images) {
@@ -265,10 +301,12 @@ function renderHeroSliderImages(images) {
   // Filter out any broken image reference
   const BROKEN_IMG_URL = "https://images.unsplash.com/photo-1600607687931-cebf57434778?auto=format&fit=crop&w=1600&q=80";
   if (siteData && siteData.home && siteData.home.hero && Array.isArray(siteData.home.hero.sliderImages)) {
-    siteData.home.hero.sliderImages = siteData.home.hero.sliderImages.filter(img => img !== BROKEN_IMG_URL);
+    siteData.home.hero.sliderImages = siteData.home.hero.sliderImages.filter(img => getHeroSlideUrl(img) !== BROKEN_IMG_URL);
   }
 
-  let activeImages = Array.isArray(images) && images.length > 0 ? images.filter(img => img !== BROKEN_IMG_URL) : [];
+  let activeImages = Array.isArray(images) && images.length > 0 
+    ? images.filter(img => getHeroSlideUrl(img) !== BROKEN_IMG_URL && getHeroSlideUrl(img) !== '') 
+    : [];
   
   // Check if any custom uploaded image is currently present in active images
   const hasCustomImages = activeImages.some(img => !isPresetImage(img));
@@ -277,7 +315,7 @@ function renderHeroSliderImages(images) {
   let isDefaultLockedState = false;
 
   if (activeImages.length === 0) {
-    displayImages = [...DEFAULT_HERO_PRESET_IMAGES];
+    displayImages = DEFAULT_HERO_PRESET_IMAGES.map(url => ({ url, duration: 4 }));
     isDefaultLockedState = true;
   } else if (!hasCustomImages && activeImages.length === DEFAULT_HERO_PRESET_IMAGES.length) {
     displayImages = activeImages;
@@ -309,7 +347,7 @@ function renderHeroSliderImages(images) {
       infoBanner.style.background = 'rgba(96, 165, 250, 0.08)';
       infoBanner.style.border = '1px solid rgba(96, 165, 250, 0.2)';
       infoBanner.style.color = 'var(--accent)';
-      infoBanner.innerHTML = `<span>💡 <strong>Custom Images Active:</strong> You can remove preset photos if you want only custom images to appear. Removed presets are saved in the library below for 1-click restore.</span>`;
+      infoBanner.innerHTML = `<span>💡 <strong>Sequence & Duration Active:</strong> Drag 2-line handle (=) ya ▲/▼ buttons se image sequence badalein. Har photo ka display time (seconds) set karein.</span>`;
     }
   }
 
@@ -317,8 +355,10 @@ function renderHeroSliderImages(images) {
   if (displayImages.length === 0) {
     container.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem;">No active images in slider.</div>`;
   } else {
-    container.innerHTML = displayImages.map((img, i) => {
-      const isPreset = isPresetImage(img);
+    container.innerHTML = displayImages.map((item, i) => {
+      const url = getHeroSlideUrl(item);
+      const duration = getHeroSlideDuration(item);
+      const isPreset = isPresetImage(item);
       const badgeHtml = isPreset
         ? `<span class="badge-preset">Preset Default</span>`
         : `<span class="badge-custom">Custom Upload</span>`;
@@ -327,28 +367,64 @@ function renderHeroSliderImages(images) {
       if (isDefaultLockedState) {
         actionButtonHtml = `<span style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;" title="Upload custom image to customize or remove default images">🔒 Default</span>`;
       } else {
-        actionButtonHtml = `<button class="btn btn-sm btn-outline-danger" style="color:var(--red);border-color:var(--red);padding:4px 10px;font-size:0.75rem;cursor:pointer;" onclick="removeHeroSliderImage(${i})" title="${isPreset ? 'Remove from active slider (stored in library below)' : 'Delete uploaded image'}">${isPreset ? '✕ Remove from Slider' : '🗑️ Delete'}</button>`;
+        actionButtonHtml = `<button class="btn btn-sm btn-outline-danger" style="color:var(--red);border-color:var(--red);padding:4px 10px;font-size:0.75rem;cursor:pointer;" onclick="removeHeroSliderImage(${i})" title="${isPreset ? 'Remove from active slider (stored in library below)' : 'Delete uploaded image'}">${isPreset ? '✕ Remove' : '🗑️ Delete'}</button>`;
       }
 
+      const reorderButtonsHtml = isDefaultLockedState ? '' : `
+        <button class="btn-reorder" title="Move Up (Uper le jane ke liye)" onclick="moveHeroSlide(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▲</button>
+        <button class="btn-reorder" title="Move Down (Niche le jane ke liye)" onclick="moveHeroSlide(${i}, 1)" ${i === displayImages.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▼</button>
+      `;
+
+      const dragHandleHtml = isDefaultLockedState ? '' : `
+        <div class="slider-drag-handle" title="Click & Drag (2 lines) to change sequence" data-index="${i}">
+          <span class="drag-line"></span>
+          <span class="drag-line"></span>
+        </div>
+      `;
+
       return `
-        <div class="slider-img-item">
-          <img src="${escapeAttr(img)}" class="slider-img-thumb" alt="Hero Slide ${i+1}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
+        <div class="slider-img-item" id="hero-slide-item-${i}" data-index="${i}">
+          ${dragHandleHtml}
+          <img src="${escapeAttr(url)}" class="slider-img-thumb" alt="Hero Slide ${i+1}" onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNTAiIGhlaWdodD0iMTUwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZWVlIi8+PC9zdmc+';" />
           <div class="slider-img-info">
             <div class="slider-img-badges">
               <span style="font-weight:600;font-size:0.85rem;color:var(--text-primary);">Slide ${i + 1}</span>
               ${badgeHtml}
             </div>
-            <div class="slider-img-url" title="${escapeAttr(img)}">${escapeHtml(img)}</div>
+            <div class="slider-img-url" title="${escapeAttr(url)}">${escapeHtml(url)}</div>
+            <div class="slider-duration-control">
+              <label class="slider-duration-label" title="Set how many seconds this image shows in hero slider">
+                <span>⏱️ Show Time:</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="60"
+                  step="1"
+                  class="slider-duration-input"
+                  value="${duration}"
+                  onchange="updateHeroSlideDuration(${i}, this.value)"
+                />
+                <span>sec</span>
+              </label>
+              <span style="font-size:0.72rem;color:var(--text-muted);">${duration} sec onscreen</span>
+            </div>
           </div>
-          <div>${actionButtonHtml}</div>
+          <div class="slider-item-actions">
+            ${reorderButtonsHtml}
+            ${actionButtonHtml}
+          </div>
         </div>
       `;
     }).join('');
+
+    if (!isDefaultLockedState) {
+      initHeroSliderDragAndDrop();
+    }
   }
 
   // Render Preset Library (Removed Default Images)
-  const currentActiveList = activeImages.length > 0 ? activeImages : DEFAULT_HERO_PRESET_IMAGES;
-  const removedPresets = DEFAULT_HERO_PRESET_IMAGES.filter(preset => !currentActiveList.includes(preset));
+  const currentActiveUrls = displayImages.map(item => getHeroSlideUrl(item));
+  const removedPresets = DEFAULT_HERO_PRESET_IMAGES.filter(preset => !currentActiveUrls.includes(preset));
 
   if (presetLibraryBox) {
     if (removedPresets.length > 0) {
@@ -374,6 +450,90 @@ function renderHeroSliderImages(images) {
         presetList.innerHTML = `<div style="font-size:0.8rem;color:var(--text-muted);padding:8px 0;">All default preset images are currently added in the slider.</div>`;
       }
     }
+  }
+}
+
+let draggedHeroSlideIndex = null;
+function initHeroSliderDragAndDrop() {
+  const cards = document.querySelectorAll('#hero-slider-images .slider-img-item');
+  cards.forEach(card => {
+    const handle = card.querySelector('.slider-drag-handle');
+    if (handle) {
+      handle.addEventListener('mousedown', () => {
+        card.setAttribute('draggable', 'true');
+      });
+      handle.addEventListener('touchstart', () => {
+        card.setAttribute('draggable', 'true');
+      }, { passive: true });
+    }
+
+    card.addEventListener('dragstart', (e) => {
+      draggedHeroSlideIndex = parseInt(card.dataset.index);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(draggedHeroSlideIndex));
+      card.classList.add('dragging');
+    });
+
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (!card.classList.contains('dragging')) {
+        card.classList.add('drag-over');
+      }
+    });
+
+    card.addEventListener('dragleave', (e) => {
+      if (!card.contains(e.relatedTarget)) {
+        card.classList.remove('drag-over');
+      }
+    });
+
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const targetIndex = parseInt(card.dataset.index);
+      if (draggedHeroSlideIndex !== null && !isNaN(draggedHeroSlideIndex) && draggedHeroSlideIndex !== targetIndex) {
+        ensureHeroSliderNormalized();
+        const [moved] = siteData.home.hero.sliderImages.splice(draggedHeroSlideIndex, 1);
+        siteData.home.hero.sliderImages.splice(targetIndex, 0, moved);
+        renderHeroSliderImages(siteData.home.hero.sliderImages);
+        saveHeroSliderLive();
+        showToast(`↔️ Slide sequence updated! (Moved to #${targetIndex + 1})`, 'success');
+      }
+    });
+
+    card.addEventListener('dragend', () => {
+      cards.forEach(c => {
+        c.classList.remove('dragging', 'drag-over');
+        c.setAttribute('draggable', 'false');
+      });
+      draggedHeroSlideIndex = null;
+    });
+  });
+}
+
+function moveHeroSlide(index, direction) {
+  ensureHeroSliderNormalized();
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= siteData.home.hero.sliderImages.length) return;
+  const [moved] = siteData.home.hero.sliderImages.splice(index, 1);
+  siteData.home.hero.sliderImages.splice(targetIndex, 0, moved);
+  renderHeroSliderImages(siteData.home.hero.sliderImages);
+  saveHeroSliderLive();
+  showToast(`↔️ Slide moved to #${targetIndex + 1}`, 'success');
+}
+
+function updateHeroSlideDuration(index, value) {
+  ensureHeroSliderNormalized();
+  let sec = parseInt(value, 10);
+  if (isNaN(sec) || sec < 1) sec = 4;
+  if (sec > 60) sec = 60;
+
+  if (siteData.home.hero.sliderImages[index]) {
+    siteData.home.hero.sliderImages[index].duration = sec;
+    renderHeroSliderImages(siteData.home.hero.sliderImages);
+    saveHeroSliderLive();
+    showToast(`⏱️ Slide ${index + 1} display duration set to ${sec}s!`, 'success');
   }
 }
 
@@ -453,20 +613,19 @@ async function uploadHeroSliderFiles(files) {
   if (!files || files.length === 0) return;
   showLoading(true);
 
-  if (!siteData.home.hero.sliderImages || siteData.home.hero.sliderImages.length === 0) {
-    siteData.home.hero.sliderImages = [...DEFAULT_HERO_PRESET_IMAGES];
-  }
+  ensureHeroSliderNormalized();
 
   let uploadCount = 0;
   try {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const url = await uploadFileToCloudinary(file, 'hero_slider');
-      siteData.home.hero.sliderImages.push(url);
+      siteData.home.hero.sliderImages.push({ url, duration: 4 });
       uploadCount++;
     }
 
     renderHeroSliderImages(siteData.home.hero.sliderImages);
+    saveHeroSliderLive();
     showToast(`☁️ ${uploadCount} Hero image(s) uploaded successfully!`, 'success');
   } catch (err) {
     console.error('Slider image upload error:', err);
@@ -489,11 +648,9 @@ function handleHeroSliderDrop(e) {
 }
 
 function removeHeroSliderImage(i) {
-  if (!siteData.home.hero.sliderImages || siteData.home.hero.sliderImages.length === 0) {
-    siteData.home.hero.sliderImages = [...DEFAULT_HERO_PRESET_IMAGES];
-  }
+  ensureHeroSliderNormalized();
 
-  const removedUrl = siteData.home.hero.sliderImages[i];
+  const removedItem = siteData.home.hero.sliderImages[i];
   siteData.home.hero.sliderImages.splice(i, 1);
 
   const hasCustom = siteData.home.hero.sliderImages.some(img => !isPresetImage(img));
@@ -502,28 +659,66 @@ function removeHeroSliderImage(i) {
   }
 
   renderHeroSliderImages(siteData.home.hero.sliderImages);
-  showToast(isPresetImage(removedUrl) ? 'Preset removed from active slider (saved in library)' : 'Custom image removed', 'info');
+  saveHeroSliderLive();
+  showToast(isPresetImage(removedItem) ? 'Preset removed from active slider (saved in library)' : 'Custom image removed', 'info');
 }
 
 function addHeroPresetBack(presetUrl) {
-  if (!siteData.home.hero.sliderImages) siteData.home.hero.sliderImages = [];
-  if (!siteData.home.hero.sliderImages.includes(presetUrl)) {
-    siteData.home.hero.sliderImages.push(presetUrl);
+  ensureHeroSliderNormalized();
+  const exists = siteData.home.hero.sliderImages.some(item => getHeroSlideUrl(item) === presetUrl);
+  if (!exists) {
+    siteData.home.hero.sliderImages.push({ url: presetUrl, duration: 4 });
   }
   renderHeroSliderImages(siteData.home.hero.sliderImages);
+  saveHeroSliderLive();
   showToast('➕ Preset added back to slider!', 'success');
 }
 
 function restoreAllHeroPresets() {
-  if (!siteData.home.hero.sliderImages) siteData.home.hero.sliderImages = [];
+  ensureHeroSliderNormalized();
   DEFAULT_HERO_PRESET_IMAGES.forEach(preset => {
-    if (!siteData.home.hero.sliderImages.includes(preset)) {
-      siteData.home.hero.sliderImages.push(preset);
+    const exists = siteData.home.hero.sliderImages.some(item => getHeroSlideUrl(item) === preset);
+    if (!exists) {
+      siteData.home.hero.sliderImages.push({ url: preset, duration: 4 });
     }
   });
   renderHeroSliderImages(siteData.home.hero.sliderImages);
+  saveHeroSliderLive();
   showToast('➕ All presets restored to slider!', 'success');
 }
+
+let heroSliderLiveTimeout = null;
+async function saveHeroSliderLive() {
+  // 1. Instant sync to Firebase RTDB (Live reflection on website)
+  try {
+    if (typeof db !== 'undefined' && db) {
+      const cleanSlides = JSON.parse(JSON.stringify(siteData.home.hero.sliderImages || []));
+      await db.ref('website/content/home/hero/sliderImages').set(cleanSlides);
+    }
+  } catch (fbErr) {
+    console.warn('Firebase hero slider sync failed:', fbErr);
+  }
+
+  // 2. Debounced save to local backend & disk
+  clearTimeout(heroSliderLiveTimeout);
+  heroSliderLiveTimeout = setTimeout(async () => {
+    try {
+      await fetch(`${API}/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(siteData)
+      });
+      await fetch(`${API}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(siteData)
+      });
+    } catch (apiErr) {
+      console.warn('Backend save failed:', apiErr);
+    }
+  }, 400);
+}
+
 
 
 function renderStats(stats) {

@@ -151,7 +151,25 @@
         "3D Visualization"
       ],
       "title_highlight": "Inspire",
-      "title_line1": "We Design Spaces"
+      "title_line1": "We Design Spaces",
+      "sliderImages": [
+        {
+          "url": "https://res.cloudinary.com/dqnf1fel9/image/upload/f_auto,q_auto/v1792308919/hero_slider/fmwajuxftjn8yf1mwe3z5.png",
+          "duration": 4
+        },
+        {
+          "url": "https://res.cloudinary.com/dqnf1fel9/image/upload/f_auto,q_auto/v1792309670/hero_slider/hgrpaxmmmqy7yinnyvrd.jpg",
+          "duration": 4
+        },
+        {
+          "url": "https://res.cloudinary.com/dqnf1fel9/image/upload/f_auto,q_auto/v1792309734/hero_slider/qwq1b3qfu8ehhdslupc0.jpg",
+          "duration": 4
+        },
+        {
+          "url": "https://res.cloudinary.com/dqnf1fel9/image/upload/f_auto,q_auto/v1792310132/hero_slider/uxv4kug9riefhsulntme.jpg",
+          "duration": 4
+        }
+      ]
     },
     "philosophy": {
       "image": "images/homepage5.jpeg",

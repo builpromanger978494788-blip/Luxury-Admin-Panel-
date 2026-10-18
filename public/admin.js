@@ -650,7 +650,20 @@ function handleHeroSliderDrop(e) {
 function removeHeroSliderImage(i) {
   ensureHeroSliderNormalized();
 
+  if (!siteData.home?.hero?.sliderImages || !siteData.home.hero.sliderImages[i]) return;
+
   const removedItem = siteData.home.hero.sliderImages[i];
+  const isPreset = isPresetImage(removedItem);
+  const slideNum = i + 1;
+
+  const confirmMsg = isPreset
+    ? `Kya aap Slide ${slideNum} (Default Preset Photo) ko slider se hatana chahte hain?\n(Hatane ke baad bhi ye niche library me save rahegi)`
+    : `Are you sure you want to delete Slide ${slideNum}?\nKya aap sach me is image ko delete karna chahte hain?`;
+
+  if (!confirm(confirmMsg)) {
+    return; // User cancelled - do not delete
+  }
+
   siteData.home.hero.sliderImages.splice(i, 1);
 
   const hasCustom = siteData.home.hero.sliderImages.some(img => !isPresetImage(img));
@@ -660,7 +673,7 @@ function removeHeroSliderImage(i) {
 
   renderHeroSliderImages(siteData.home.hero.sliderImages);
   saveHeroSliderLive();
-  showToast(isPresetImage(removedItem) ? 'Preset removed from active slider (saved in library)' : 'Custom image removed', 'info');
+  showToast(isPreset ? `✓ Slide ${slideNum} slider se hata di gayi hai` : `🗑️ Slide ${slideNum} delete ho gayi hai`, 'info');
 }
 
 function addHeroPresetBack(presetUrl) {

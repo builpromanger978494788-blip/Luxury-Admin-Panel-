@@ -105,8 +105,18 @@ app.get('/api/content', (req, res) => {
 // ── API: Save content ──
 app.put('/api/content', (req, res) => {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      fs.writeFileSync(DATA_FILE, JSON.stringify(req.body, null, 2), 'utf8');
+    const payload = JSON.stringify(req.body, null, 2);
+    try {
+      if (!fs.existsSync(APP_DIR)) fs.mkdirSync(APP_DIR, { recursive: true });
+      fs.writeFileSync(DATA_FILE, payload, 'utf8');
+    } catch (e) {
+      console.warn('Could not write to DATA_FILE:', e);
+    }
+    const localData = path.join(__dirname, 'public', 'data.json');
+    try {
+      fs.writeFileSync(localData, payload, 'utf8');
+    } catch (e) {
+      console.warn('Could not write to local public/data.json:', e);
     }
     res.json({ success: true, message: 'Content saved successfully' });
   } catch (err) {

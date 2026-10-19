@@ -74,29 +74,33 @@ async function loadContent() {
     const snapshot = await db.ref('website/content').once('value');
     if (snapshot.exists()) {
       siteData = snapshot.val();
+      if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
       firebaseConnected = true;
       updateFirebaseStatus(true, 'Connected to Firebase. Data loaded from RTDB.');
     } else {
       // First time — load from local data.json and push to RTDB
       const res = await fetch(`${API}/content`);
       siteData = await res.json();
+      if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
       await db.ref('website/content').set(siteData);
       firebaseConnected = true;
-      updateFirebaseStatus(true, 'First sync complete! Data pushed to RTDB.');
-      showToast('🔥 Data synced to Firebase successfully!', 'success');
+      updateFirebaseStatus(true, 'First sync complete. Data pushed to RTDB.');
+      showToast('Data synced to Firebase', 'success');
     }
   } catch (err) {
     console.error('Firebase error, falling back to local:', err);
     try {
       const res = await fetch(`${API}/content`);
       siteData = await res.json();
+      if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
       updateFirebaseStatus(false, 'Firebase unavailable. Using local data.');
     } catch (e) {
-      showToast('Failed to load content from any source.', 'error');
+      showToast('Failed to load content', 'error');
       showLoading(false);
       return;
     }
   }
+  if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
   populateAllForms();
   updateDashboard();
   setupMessagesListener();
@@ -107,27 +111,30 @@ async function loadContent() {
 function updateFirebaseStatus(connected, message) {
   const badge = document.getElementById('firebaseStatus');
   const msg = document.getElementById('firebaseMsg');
-  if (connected) {
-    badge.textContent = '✓ Connected';
-    badge.style.background = '#ecfdf5';
-    badge.style.color = '#10b981';
-  } else {
-    badge.textContent = '✕ Offline';
-    badge.style.background = '#fef2f2';
-    badge.style.color = '#ef4444';
+  if (badge) {
+    if (connected) {
+      badge.textContent = '✓ Connected';
+      badge.style.background = '#ecfdf5';
+      badge.style.color = '#10b981';
+    } else {
+      badge.textContent = '✕ Offline';
+      badge.style.background = '#fef2f2';
+      badge.style.color = '#ef4444';
+    }
   }
   if (msg) msg.textContent = message;
 }
 
 // ── Sync Functions ──
 async function syncToFirebase() {
-  showLoading(true);
+  showLoading(true, 'Syncing to Firebase...');
   try {
     collectAllFormData();
+    if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
     await db.ref('website/content').set(siteData);
     firebaseConnected = true;
-    updateFirebaseStatus(true, 'Data synced to Firebase successfully!');
-    showToast('🔄 Local data pushed to Firebase!', 'success');
+    updateFirebaseStatus(true, 'Data synced to Firebase successfully.');
+    showToast('Data pushed to Firebase', 'success');
   } catch (err) {
     showToast('Sync to Firebase failed: ' + err.message, 'error');
   }
@@ -135,17 +142,18 @@ async function syncToFirebase() {
 }
 
 async function syncFromFirebase() {
-  showLoading(true);
+  showLoading(true, 'Loading from Firebase...');
   try {
     const snapshot = await db.ref('website/content').once('value');
     if (snapshot.exists()) {
       siteData = snapshot.val();
+      if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
       populateAllForms();
       updateDashboard();
-      updateFirebaseStatus(true, 'Data loaded from Firebase!');
-      showToast('📥 Data pulled from Firebase!', 'success');
+      updateFirebaseStatus(true, 'Data loaded from Firebase.');
+      showToast('Data loaded from Firebase', 'success');
     } else {
-      showToast('No data found in Firebase.', 'error');
+      showToast('No data found in Firebase', 'error');
     }
   } catch (err) {
     showToast('Sync from Firebase failed: ' + err.message, 'error');
@@ -347,7 +355,7 @@ function renderHeroSliderImages(images) {
       infoBanner.style.background = 'rgba(96, 165, 250, 0.08)';
       infoBanner.style.border = '1px solid rgba(96, 165, 250, 0.2)';
       infoBanner.style.color = 'var(--accent)';
-      infoBanner.innerHTML = `<span>💡 <strong>Sequence & Duration Active:</strong> Drag 2-line handle (=) ya ▲/▼ buttons se image sequence badalein. Har photo ka display time (seconds) set karein.</span>`;
+      infoBanner.innerHTML = `<span>💡 <strong>Sequence & Duration:</strong> Reorder slides using handle (=) or ▲/▼. Adjust display duration per slide.</span>`;
     }
   }
 
@@ -371,8 +379,8 @@ function renderHeroSliderImages(images) {
       }
 
       const reorderButtonsHtml = isDefaultLockedState ? '' : `
-        <button class="btn-reorder" title="Move Up (Uper le jane ke liye)" onclick="moveHeroSlide(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▲</button>
-        <button class="btn-reorder" title="Move Down (Niche le jane ke liye)" onclick="moveHeroSlide(${i}, 1)" ${i === displayImages.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▼</button>
+        <button class="btn-reorder" title="Move Up" onclick="moveHeroSlide(${i}, -1)" ${i === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▲</button>
+        <button class="btn-reorder" title="Move Down" onclick="moveHeroSlide(${i}, 1)" ${i === displayImages.length - 1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>▼</button>
       `;
 
       const dragHandleHtml = isDefaultLockedState ? '' : `
@@ -533,29 +541,158 @@ function updateHeroSlideDuration(index, value) {
     siteData.home.hero.sliderImages[index].duration = sec;
     renderHeroSliderImages(siteData.home.hero.sliderImages);
     saveHeroSliderLive();
-    showToast(`⏱️ Slide ${index + 1} display duration set to ${sec}s!`, 'success');
+    showToast(`Slide ${index + 1} duration set to ${sec}s`, 'success');
   }
 }
 
-// ── Direct Signed Upload to Cloudinary ──
-// Uploads directly from browser to Cloudinary CDN, bypassing Vercel 4.5MB limit entirely.
-// No canvas compression needed: allows files of any size (up to 100MB) without black/corrupt image glitches!
-async function uploadFileToCloudinary(file, folder = 'architecture_studio') {
+// ── In-Card Upload Progress Helpers ──
+function getProgressCardHtml(id, label = 'Uploading image...') {
+  return `
+    <div id="${id}" class="upload-progress-card" style="display:none;">
+      <div class="upload-progress-header">
+        <div class="upload-progress-title">
+          <span class="upload-spinner-mini"></span>
+          <span class="upload-progress-label">${label}</span>
+        </div>
+        <span class="upload-progress-percent">0%</span>
+      </div>
+      <div class="upload-progress-bar-track">
+        <div class="upload-progress-bar-fill" style="width: 0%;"></div>
+      </div>
+      <div class="upload-progress-status">
+        <span class="upload-progress-detail">Connecting to Cloudinary...</span>
+      </div>
+    </div>
+  `;
+}
+
+function ensureProgressCardMarkup(el, label = 'Uploading image...', detail = 'Connecting to Cloudinary...') {
+  if (!el) return;
+  if (!el.querySelector('.upload-progress-bar-fill')) {
+    el.innerHTML = `
+      <div class="upload-progress-header">
+        <div class="upload-progress-title">
+          <span class="upload-spinner-mini"></span>
+          <span class="upload-progress-label">${escapeHtml(label || 'Uploading image...')}</span>
+        </div>
+        <span class="upload-progress-percent">0%</span>
+      </div>
+      <div class="upload-progress-bar-track">
+        <div class="upload-progress-bar-fill" style="width: 0%;"></div>
+      </div>
+      <div class="upload-progress-status">
+        <span class="upload-progress-detail">${escapeHtml(detail || 'Connecting to Cloudinary...')}</span>
+      </div>
+    `;
+  }
+}
+
+function updateProgressCard(elOrId, percent, label, detail) {
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (!el) return;
+
+  ensureProgressCardMarkup(el, label, detail);
+
+  // Clear any existing hide timeout so progress doesn't abruptly vanish mid-upload
+  if (el._hideTimeout) {
+    clearTimeout(el._hideTimeout);
+    el._hideTimeout = null;
+  }
+
+  el.style.display = 'flex';
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+  el.classList.remove('upload-finished');
+
+  const percentEl = el.querySelector('.upload-progress-percent');
+  const barEl = el.querySelector('.upload-progress-bar-fill');
+  const labelEl = el.querySelector('.upload-progress-label');
+  const detailEl = el.querySelector('.upload-progress-detail');
+  const spinnerEl = el.querySelector('.upload-spinner-mini');
+
+  const p = Math.min(100, Math.max(0, Math.round(percent)));
+  if (percentEl) percentEl.textContent = p + '%';
+  if (barEl) {
+    barEl.style.width = p + '%';
+    barEl.style.background = ''; // default vibrant gradient
+  }
+  if (label && labelEl) labelEl.textContent = label;
+  if (detail && detailEl) detailEl.textContent = detail;
+  if (spinnerEl && p < 100) spinnerEl.style.display = 'inline-block';
+
+  if (p >= 100) {
+    el.classList.add('upload-finished');
+    if (spinnerEl) spinnerEl.style.display = 'none';
+    if (labelEl) labelEl.innerHTML = '✓ Upload complete';
+    if (detailEl) detailEl.textContent = detail || 'File processed successfully';
+    if (barEl) {
+      barEl.style.width = '100%';
+      barEl.style.background = 'linear-gradient(90deg, #10B981 0%, #059669 100%)';
+    }
+
+    el._hideTimeout = setTimeout(() => {
+      el.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(-4px)';
+      setTimeout(() => {
+        el.style.display = 'none';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+        el.style.transition = '';
+        el.classList.remove('upload-finished');
+        if (spinnerEl) spinnerEl.style.display = 'inline-block';
+        if (barEl) {
+          barEl.style.width = '0%';
+          barEl.style.background = '';
+        }
+        if (percentEl) percentEl.textContent = '0%';
+        el._hideTimeout = null;
+      }, 350);
+    }, 1200);
+  }
+}
+
+function hideProgressCard(elOrId) {
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  if (!el) return;
+  if (el._hideTimeout) {
+    clearTimeout(el._hideTimeout);
+    el._hideTimeout = null;
+  }
+  el.style.transition = 'opacity 0.25s ease';
+  el.style.opacity = '0';
+  setTimeout(() => {
+    el.style.display = 'none';
+    el.style.opacity = '1';
+    el.style.transition = '';
+    const barEl = el.querySelector('.upload-progress-bar-fill');
+    const percentEl = el.querySelector('.upload-progress-percent');
+    if (barEl) {
+      barEl.style.width = '0%';
+      barEl.style.background = '';
+    }
+    if (percentEl) percentEl.textContent = '0%';
+  }, 250);
+}
+
+// ── Direct Signed Upload to Cloudinary with Real-Time Progress ──
+async function uploadFileToCloudinary(file, folder = 'architecture_studio', onProgress = null) {
   if (!file) throw new Error('No file selected');
 
-  // Step 1: Request signature from server (lightweight GET request, ~50 bytes)
+  // Step 1: Request signature from server
   let signData;
   try {
+    if (typeof onProgress === 'function') onProgress(12);
     const signRes = await fetch(`${API}/cloudinary-sign?folder=${encodeURIComponent(folder)}`);
     if (!signRes.ok) throw new Error(`Signature error (status ${signRes.status})`);
     signData = await signRes.json();
     if (!signData.signature) throw new Error(signData.error || 'Failed to obtain upload signature');
   } catch (signErr) {
     console.warn('Direct upload signing failed, falling back to server relay:', signErr);
-    return uploadViaServerRelay(file, folder);
+    return uploadViaServerRelay(file, folder, onProgress);
   }
 
-  // Step 2: Upload file directly to Cloudinary endpoint
+  // Step 2: Upload file directly to Cloudinary endpoint via XHR for progress events
   const formData = new FormData();
   formData.append('file', file);
   formData.append('api_key', signData.api_key);
@@ -563,77 +700,123 @@ async function uploadFileToCloudinary(file, folder = 'architecture_studio') {
   formData.append('signature', signData.signature);
   formData.append('folder', signData.folder);
 
-  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${signData.cloud_name}/image/upload`, {
-    method: 'POST',
-    body: formData
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${signData.cloud_name}/image/upload`);
+
+    if (xhr.upload && typeof onProgress === 'function') {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          const rawPct = e.loaded / e.total;
+          const pct = Math.min(95, Math.max(15, Math.round(15 + rawPct * 80)));
+          onProgress(pct);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      try {
+        const uploadResult = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300 && uploadResult.secure_url) {
+          if (typeof onProgress === 'function') onProgress(100);
+          const optimizedUrl = uploadResult.secure_url.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
+          resolve(optimizedUrl);
+        } else {
+          const errText = uploadResult.error && uploadResult.error.message ? uploadResult.error.message : `Upload failed (${xhr.status})`;
+          reject(new Error(errText));
+        }
+      } catch (err) {
+        reject(new Error('Invalid response from Cloudinary'));
+      }
+    };
+
+    xhr.onerror = () => {
+      console.warn('Direct upload failed, trying server relay fallback...');
+      uploadViaServerRelay(file, folder, onProgress).then(resolve).catch(reject);
+    };
+
+    xhr.send(formData);
   });
-
-  const uploadResult = await uploadRes.json();
-
-  if (!uploadRes.ok || !uploadResult.secure_url) {
-    const errText = uploadResult.error && uploadResult.error.message ? uploadResult.error.message : `Upload failed (Status ${uploadRes.status})`;
-    throw new Error(errText);
-  }
-
-  // Inject Cloudinary auto-optimization parameters into the URL
-  const optimizedUrl = uploadResult.secure_url.replace('/image/upload/', '/image/upload/f_auto,q_auto/');
-  return optimizedUrl;
 }
 
-// Fallback upload via server
-async function uploadViaServerRelay(file, folder) {
+// Fallback upload via server with progress
+async function uploadViaServerRelay(file, folder, onProgress = null) {
   const formData = new FormData();
   formData.append('image', file);
   formData.append('folder', folder);
 
-  const response = await fetch(`${API}/upload-cloudinary`, {
-    method: 'POST',
-    body: formData
-  });
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API}/upload-cloudinary`);
 
-  const responseText = await response.text();
-  let result;
-  try {
-    result = JSON.parse(responseText);
-  } catch (parseErr) {
-    if (response.status === 413 || responseText.toLowerCase().includes('request entity too large')) {
-      throw new Error('Image file exceeds server limit. Please ensure direct Cloudinary upload is accessible.');
+    if (xhr.upload && typeof onProgress === 'function') {
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && e.total > 0) {
+          const rawPct = e.loaded / e.total;
+          const pct = Math.min(95, Math.max(15, Math.round(15 + rawPct * 80)));
+          onProgress(pct);
+        }
+      };
     }
-    throw new Error(responseText.slice(0, 150) || `Server error (${response.status})`);
-  }
 
-  if (!response.ok || !result.success || !result.url) {
-    throw new Error(result.error || `Upload failed with status ${response.status}`);
-  }
+    xhr.onload = () => {
+      const responseText = xhr.responseText;
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseErr) {
+        if (xhr.status === 413 || responseText.toLowerCase().includes('request entity too large')) {
+          return reject(new Error('Image file exceeds server limit'));
+        }
+        return reject(new Error(responseText.slice(0, 150) || `Server error (${xhr.status})`));
+      }
 
-  return result.url;
+      if (xhr.status >= 200 && xhr.status < 300 && result.success && result.url) {
+        if (typeof onProgress === 'function') onProgress(100);
+        resolve(result.url);
+      } else {
+        reject(new Error(result.error || `Upload failed (${xhr.status})`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(formData);
+  });
 }
 
 async function uploadHeroSliderFiles(files) {
-  if (!files || files.length === 0) return;
-  showLoading(true);
+  const fileList = Array.from(files || []);
+  if (!fileList.length) return;
 
   ensureHeroSliderNormalized();
+  const progressEl = document.getElementById('hero-slider-upload-progress');
 
+  const totalFiles = fileList.length;
   let uploadCount = 0;
+  updateProgressCard(progressEl, 8, totalFiles > 1 ? `Uploading slide 1 of ${totalFiles}` : 'Uploading slide...', fileList[0].name);
   try {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const url = await uploadFileToCloudinary(file, 'hero_slider');
+    for (let i = 0; i < totalFiles; i++) {
+      const file = fileList[i];
+      const url = await uploadFileToCloudinary(file, 'hero_slider', (filePct) => {
+        const overall = Math.round(((i + (filePct / 100)) / totalFiles) * 100);
+        const label = totalFiles > 1 ? `Uploading slide ${i + 1} of ${totalFiles}` : 'Uploading slide...';
+        updateProgressCard(progressEl, overall, label, file.name);
+      });
       siteData.home.hero.sliderImages.push({ url, duration: 4 });
       uploadCount++;
     }
 
+    updateProgressCard(progressEl, 100, 'Upload complete', `${uploadCount} slide(s) uploaded`);
     renderHeroSliderImages(siteData.home.hero.sliderImages);
     saveHeroSliderLive();
-    showToast(`☁️ ${uploadCount} Hero image(s) uploaded successfully!`, 'success');
+    showToast(uploadCount > 1 ? `${uploadCount} slides uploaded successfully` : 'Slide uploaded successfully', 'success');
   } catch (err) {
     console.error('Slider image upload error:', err);
+    hideProgressCard(progressEl);
     showToast('Slider upload failed: ' + err.message, 'error');
   } finally {
     const fileInput = document.getElementById('hero-slider-file-input');
     if (fileInput) fileInput.value = '';
-    showLoading(false);
   }
 }
 
@@ -657,11 +840,11 @@ function removeHeroSliderImage(i) {
   const slideNum = i + 1;
 
   const confirmMsg = isPreset
-    ? `Kya aap Slide ${slideNum} (Default Preset Photo) ko slider se hatana chahte hain?\n(Hatane ke baad bhi ye niche library me save rahegi)`
-    : `Are you sure you want to delete Slide ${slideNum}?\nKya aap sach me is image ko delete karna chahte hain?`;
+    ? `Remove default preset slide ${slideNum} from active slider?`
+    : `Are you sure you want to delete slide ${slideNum}?`;
 
   if (!confirm(confirmMsg)) {
-    return; // User cancelled - do not delete
+    return; // User cancelled
   }
 
   siteData.home.hero.sliderImages.splice(i, 1);
@@ -673,7 +856,7 @@ function removeHeroSliderImage(i) {
 
   renderHeroSliderImages(siteData.home.hero.sliderImages);
   saveHeroSliderLive();
-  showToast(isPreset ? `✓ Slide ${slideNum} slider se hata di gayi hai` : `🗑️ Slide ${slideNum} delete ho gayi hai`, 'info');
+  showToast(isPreset ? `Slide ${slideNum} removed` : `Slide ${slideNum} deleted`, 'info');
 }
 
 function addHeroPresetBack(presetUrl) {
@@ -684,7 +867,7 @@ function addHeroPresetBack(presetUrl) {
   }
   renderHeroSliderImages(siteData.home.hero.sliderImages);
   saveHeroSliderLive();
-  showToast('➕ Preset added back to slider!', 'success');
+  showToast('Preset restored to slider', 'success');
 }
 
 function restoreAllHeroPresets() {
@@ -697,7 +880,7 @@ function restoreAllHeroPresets() {
   });
   renderHeroSliderImages(siteData.home.hero.sliderImages);
   saveHeroSliderLive();
-  showToast('➕ All presets restored to slider!', 'success');
+  showToast('All presets restored', 'success');
 }
 
 let heroSliderLiveTimeout = null;
@@ -789,6 +972,7 @@ function renderFeaturedCards(cards) {
           <div style="margin-top:8px;">
             <label style="font-size:0.8rem;">Or Upload to Cloudinary:</label>
             <input type="file" accept="image/*" onchange="uploadFeaturedToCloudinary(this, ${i})" style="font-size:0.85rem; padding: 4px;">
+            ${getProgressCardHtml('featured-upload-progress-' + i, 'Uploading featured image...')}
           </div>
         </div>
       </div>
@@ -855,10 +1039,166 @@ function removeTestimonial(i) {
 }
 
 // ═══════ PROJECTS ═══════
-function populateProjects() { renderProjectsList(); }
+function ensureProjectsNormalized() {
+  if (!siteData) siteData = {};
+  if (!siteData.projects || !Array.isArray(siteData.projects)) {
+    siteData.projects = [];
+  }
+  siteData.projects.forEach((p, idx) => {
+    if (!p || typeof p !== 'object') {
+      siteData.projects[idx] = {
+        id: idx + 1,
+        title: 'Project ' + (idx + 1),
+        category: 'architecture',
+        description: '',
+        thumbnail: '',
+        images: []
+      };
+      return;
+    }
+    if (p.id === undefined || p.id === null || isNaN(Number(p.id))) {
+      p.id = idx + 1;
+    }
+    p.title = typeof p.title === 'string' ? p.title : (p.title ? String(p.title) : 'New Project');
+    p.category = p.category || 'architecture';
+    p.description = typeof p.description === 'string' ? p.description : '';
+    p.thumbnail = typeof p.thumbnail === 'string' ? p.thumbnail : '';
+
+    if (!Array.isArray(p.images)) {
+      if (typeof p.images === 'string' && p.images.trim()) {
+        p.images = p.images.split('\n').map(s => s.trim()).filter(Boolean);
+      } else {
+        p.images = [];
+      }
+    } else {
+      p.images = p.images.filter(img => typeof img === 'string' && img.trim());
+    }
+  });
+}
+
+function populateProjects() {
+  ensureProjectsNormalized();
+  renderProjectsList();
+}
+
+function renderGalleryPreviewsHtml(images, projIndex) {
+  if (!Array.isArray(images) || images.length === 0) {
+    return '<div style="font-size:0.8rem; color:var(--text-muted); font-style:italic; margin-top:6px;">No gallery images added yet. Upload photos below.</div>';
+  }
+  return `
+    <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+      ${images.map((imgUrl, imgIdx) => `
+        <div style="position:relative; width:80px; height:60px; border-radius:6px; overflow:hidden; border:1px solid var(--border); background:var(--bg); flex-shrink:0;" title="${escapeAttr(imgUrl)}">
+          <img src="${getImageUrl(imgUrl)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.opacity='0.3'" alt="">
+          <button type="button" onclick="removeProjectGalleryImage(${projIndex}, ${imgIdx}, event)" style="position:absolute; top:3px; right:3px; background:rgba(239,68,68,0.88); color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; box-shadow:0 1px 3px rgba(0,0,0,0.3);" title="Delete this image">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function updateProjectField(projIndex, field, value) {
+  ensureProjectsNormalized();
+  if (!siteData.projects[projIndex]) return;
+  siteData.projects[projIndex][field] = value;
+
+  if (field === 'title') {
+    const titleEl = document.querySelector(`#proj-card-${projIndex} .project-admin-info h4`);
+    if (titleEl) {
+      titleEl.innerHTML = `<span style="font-size:0.75rem;color:var(--text-muted);font-weight:normal;margin-right:6px;">#${projIndex + 1}</span>${escapeHtml(value || 'Untitled Project')}`;
+    }
+  } else if (field === 'category') {
+    const catEl = document.querySelector(`#proj-card-${projIndex} .project-admin-info .cat`);
+    if (catEl) {
+      catEl.textContent = value === 'rekhatan' ? 'रेखाटने' : value.charAt(0).toUpperCase() + value.slice(1);
+    }
+  } else if (field === 'thumbnail') {
+    const cardThumb = document.querySelector(`#proj-card-${projIndex} .project-admin-thumb img`);
+    if (cardThumb) {
+      cardThumb.src = getImageUrl(value);
+      cardThumb.style.display = value ? 'block' : 'none';
+    }
+    const previewThumb = document.getElementById(`proj-thumb-preview-${projIndex}`);
+    if (previewThumb) {
+      previewThumb.src = getImageUrl(value);
+      previewThumb.style.display = value ? 'block' : 'none';
+    }
+  }
+}
+
+function updateProjectGalleryFromText(projIndex, textValue) {
+  ensureProjectsNormalized();
+  if (!siteData.projects[projIndex]) return;
+  const lines = textValue.split('\n').map(x => x.trim()).filter(Boolean);
+  siteData.projects[projIndex].images = lines;
+  const previewContainer = document.getElementById(`proj-gallery-preview-${projIndex}`);
+  if (previewContainer) {
+    previewContainer.innerHTML = renderGalleryPreviewsHtml(lines, projIndex);
+  }
+}
+
+function removeProjectGalleryImage(projIndex, imgIndex, event) {
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  ensureProjectsNormalized();
+  const proj = siteData.projects[projIndex];
+  if (!proj || !Array.isArray(proj.images)) return;
+
+  const confirmed = confirm('Are you sure you want to delete this image?');
+  if (!confirmed) return;
+
+  // Remove image from memory
+  proj.images.splice(imgIndex, 1);
+
+  // Update textarea and previews in place without re-rendering or closing card
+  const textarea = document.getElementById(`proj-gallery-textarea-${projIndex}`);
+  if (textarea) {
+    textarea.value = proj.images.join('\n');
+  }
+  const previewContainer = document.getElementById(`proj-gallery-preview-${projIndex}`);
+  if (previewContainer) {
+    previewContainer.innerHTML = renderGalleryPreviewsHtml(proj.images, projIndex);
+  }
+
+  showToast('Image removed from gallery', 'info');
+}
+
+async function saveProjectDirect(projIndex) {
+  ensureProjectsNormalized();
+  showLoading(true, 'Saving project...');
+  try {
+    // 1. Instant sync to Firebase RTDB (Live reflection on website)
+    if (typeof db !== 'undefined' && db) {
+      const cleanProjects = JSON.parse(JSON.stringify(siteData.projects || []));
+      await db.ref('website/content/projects').set(cleanProjects);
+    }
+
+    // 2. Save to local data.json
+    await fetch(`${API}/content`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(siteData)
+    });
+
+    // 3. Publish to HTML
+    await fetch(`${API}/publish`, { method: 'POST' });
+
+    updateDashboard();
+    showToast('Project saved successfully', 'success');
+  } catch (err) {
+    console.error('Save project error:', err);
+    showToast('Save failed: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
 
 function renderProjectsList() {
+  ensureProjectsNormalized();
   const container = document.getElementById('projects-list');
+  if (!container) return;
   const projects = siteData.projects || [];
   if (projects.length === 0) {
     container.innerHTML = '<div class="empty-state"><div class="icon">📁</div><p>No projects yet.</p></div>';
@@ -867,7 +1207,7 @@ function renderProjectsList() {
   container.innerHTML = projects.map((p, i) => `
     <div class="project-admin-card" id="proj-card-${i}" data-index="${i}">
       <div class="project-admin-header">
-        <div class="project-drag-handle" title="Click & Drag (2 lines) to change sequence" data-index="${i}">
+        <div class="project-drag-handle" title="Click & Drag to reorder" data-index="${i}">
           <span class="drag-line"></span>
           <span class="drag-line"></span>
         </div>
@@ -889,11 +1229,11 @@ function renderProjectsList() {
         <div class="form-grid">
           <div class="form-group">
             <label>Title</label>
-            <input type="text" value="${escapeAttr(p.title)}" onchange="siteData.projects[${i}].title=this.value">
+            <input type="text" value="${escapeAttr(p.title)}" oninput="updateProjectField(${i}, 'title', this.value)" onchange="updateProjectField(${i}, 'title', this.value)">
           </div>
           <div class="form-group">
             <label>Category</label>
-            <select onchange="siteData.projects[${i}].category=this.value">
+            <select onchange="updateProjectField(${i}, 'category', this.value)">
               <option value="architecture" ${p.category==='architecture'?'selected':''}>Architecture</option>
               <option value="interior" ${p.category==='interior'?'selected':''}>Interior</option>
               <option value="residential" ${p.category==='residential'?'selected':''}>Residential</option>
@@ -903,29 +1243,43 @@ function renderProjectsList() {
           </div>
           <div class="form-group form-full">
             <label>Description</label>
-            <textarea rows="2" onchange="siteData.projects[${i}].description=this.value">${escapeHtml(p.description)}</textarea>
+            <textarea rows="2" oninput="updateProjectField(${i}, 'description', this.value)" onchange="updateProjectField(${i}, 'description', this.value)">${escapeHtml(p.description)}</textarea>
           </div>
           <div class="form-group">
             <label>Thumbnail Image Path / URL</label>
-            <input type="text" value="${escapeAttr(p.thumbnail)}" onchange="siteData.projects[${i}].thumbnail=this.value">
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input id="proj-thumb-input-${i}" type="text" style="flex:1;" value="${escapeAttr(p.thumbnail)}" oninput="updateProjectField(${i}, 'thumbnail', this.value)" onchange="updateProjectField(${i}, 'thumbnail', this.value)">
+              <div style="width:50px; height:38px; border-radius:4px; overflow:hidden; border:1px solid var(--border); background:var(--bg); flex-shrink:0;">
+                <img id="proj-thumb-preview-${i}" src="${getImageUrl(p.thumbnail)}" style="width:100%; height:100%; object-fit:cover; display:${p.thumbnail ? 'block' : 'none'};" onerror="this.style.display='none'" alt="">
+              </div>
+            </div>
             <div style="margin-top:8px;">
-              <label style="font-size:0.8rem;">Or Upload to Cloudinary:</label>
+              <label style="font-size:0.8rem;">Or Upload Thumbnail to Cloudinary:</label>
               <input type="file" accept="image/*" onchange="uploadThumbnailToCloudinary(this, ${i})" style="font-size:0.85rem; padding: 4px;">
+              ${getProgressCardHtml('proj-thumb-progress-' + i, 'Uploading thumbnail...')}
             </div>
           </div>
           <div class="form-group form-full">
             <label>Gallery Images (one path per line)</label>
-            <textarea rows="4" onchange="siteData.projects[${i}].images=this.value.split('\\n').filter(x=>x.trim())">${(p.images||[]).join('\n')}</textarea>
+            <textarea id="proj-gallery-textarea-${i}" rows="3" oninput="updateProjectGalleryFromText(${i}, this.value)" onchange="updateProjectGalleryFromText(${i}, this.value)">${(p.images||[]).join('\n')}</textarea>
+            
+            <div id="proj-gallery-preview-${i}">
+              ${renderGalleryPreviewsHtml(p.images || [], i)}
+            </div>
           </div>
           <div class="form-group form-full">
-            <label>Upload Gallery Image to Cloudinary</label>
-            <input type="file" accept="image/*" onchange="uploadImageToCloudinary(this, ${i})">
-            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">Image will be uploaded to Cloudinary</p>
+            <label>Upload Gallery Images to Cloudinary (Single or Multiple)</label>
+            <input type="file" accept="image/*" multiple onchange="uploadImageToCloudinary(this, ${i})">
+            ${getProgressCardHtml('proj-gallery-progress-' + i, 'Uploading gallery image...')}
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">You can select one or multiple images to add to the gallery.</p>
           </div>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:12px; border-top:1px dashed var(--border-light); flex-wrap:wrap; gap:8px;">
-          <span style="font-size:0.75rem; color:var(--text-muted);">💡 Bahar click karke ya '✕ Close' button se is box ko hide kar sakte hain</span>
-          <button type="button" class="btn btn-sm" onclick="closeAllProjectEdits()">✕ Close Edit</button>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Click '✕ Close' or press Esc to collapse</span>
+          <div style="display:flex; gap:8px;">
+            <button type="button" class="btn btn-sm btn-primary" onclick="saveProjectDirect(${i})">💾 Save Project</button>
+            <button type="button" class="btn btn-sm" onclick="closeAllProjectEdits()">✕ Close Edit</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1001,8 +1355,9 @@ function moveProject(index, direction) {
 }
 
 let projectSequenceTimeout = null;
-async function saveProjectsSequenceLive() {
-  showToast('🔄 Syncing project sequence live...', 'info');
+async function saveProjectsSequenceLive(silent = false) {
+  ensureProjectsNormalized();
+  if (!silent) showToast('Updating project sequence...', 'info');
 
   // 1. Instant sync to Firebase RTDB (Live reflection on website)
   try {
@@ -1027,15 +1382,30 @@ async function saveProjectsSequenceLive() {
     } catch (e) {
       console.warn('Server save failed:', e);
     }
-    showToast('✓ Project sequence updated live on website!', 'success');
+    if (!silent) showToast('Project sequence updated', 'success');
     updateDashboard();
   }, 400);
 }
 
 function getImageUrl(path) {
   if (!path) return '';
-  if (path.startsWith('http')) return path; // Firebase Storage URL
+  if (path.startsWith('http')) return path; // Firebase Storage or Cloudinary URL
   return `https://architectsohanmali.com/${path}`; // Fetch from live site
+}
+
+function openProjectEdit(i) {
+  closeAllProjectEdits();
+  const editEl = document.getElementById('proj-edit-' + i);
+  const cardEl = document.getElementById('proj-card-' + i);
+  const btnEl = document.getElementById('btn-edit-' + i);
+  if (!editEl) return;
+
+  editEl.classList.add('open');
+  cardEl?.classList.add('is-editing');
+  if (btnEl) {
+    btnEl.innerHTML = '✕ Close';
+    btnEl.classList.add('btn-editing-active');
+  }
 }
 
 function toggleProjectEdit(i, event) {
@@ -1080,13 +1450,16 @@ document.addEventListener('click', (e) => {
   const openEdit = document.querySelector('.collapsible-content.open');
   if (!openEdit) return;
 
-  const openCard = openEdit.closest('.project-admin-card');
-  // Agar click usi open project card ke andar hua hai (input/select/buttons etc.)
-  if (openCard && openCard.contains(e.target)) {
+  // Don't close if clicked inside any project card or child element
+  if (e.target && e.target.closest && e.target.closest('.project-admin-card')) {
     return;
   }
 
-  // Agar click project card ke bahar kahin bhi hua hai -> close it
+  // If element was detached from DOM (e.g. during an in-place action like delete), don't close
+  if (!document.body.contains(e.target)) {
+    return;
+  }
+
   closeAllProjectEdits();
 });
 
@@ -1098,18 +1471,26 @@ document.addEventListener('keydown', (e) => {
 });
 
 function addProject() {
-  if (!siteData.projects) siteData.projects = [];
-  const newId = siteData.projects.length > 0
-    ? Math.max(...siteData.projects.map(p => p.id)) + 1 : 1;
+  ensureProjectsNormalized();
+  const maxId = siteData.projects.reduce((max, p) => {
+    const idNum = Number(p && p.id);
+    return !isNaN(idNum) && idNum > max ? idNum : max;
+  }, 0);
+  const newId = maxId + 1;
+
   // Place newly added project at the TOP (#1) so it's immediately prominent
   siteData.projects.unshift({
-    id: newId, title: 'New Project', category: 'architecture',
-    description: 'Project description here.', thumbnail: '', images: []
+    id: newId,
+    title: 'New Project',
+    category: 'architecture',
+    description: 'Project description here.',
+    thumbnail: '',
+    images: []
   });
   renderProjectsList();
-  toggleProjectEdit(0);
-  saveProjectsSequenceLive();
-  showToast('New project added at top! Drag handle (2 lines) to reorder anytime.', 'success');
+  openProjectEdit(0);
+  // Do NOT sync to live website yet — will sync when user clicks "Save Project"
+  showToast('New project created', 'success');
 }
 
 function removeProject(i) {
@@ -1120,82 +1501,186 @@ function removeProject(i) {
     renderProjectsList();
     saveProjectsSequenceLive();
     updateDashboard();
-    showToast('Project removed successfully', 'success');
+    showToast('Project deleted successfully', 'success');
   }
 }
 
 // ── Cloudinary Upload ──
 async function uploadImageToCloudinary(input, projIndex) {
-  const file = input.files[0];
-  if (!file) return;
-  showLoading(true);
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+
+  ensureProjectsNormalized();
+  const proj = siteData.projects && siteData.projects[projIndex];
+  if (!proj) {
+    showToast('Project not found', 'error');
+    return;
+  }
+
+  const progressEl = document.getElementById(`proj-gallery-progress-${projIndex}`);
+  const folder = getProjectFolder(proj.category);
+  const totalFiles = files.length;
+  let uploadedCount = 0;
+
+  // Immediate visual feedback on file selection
+  const initialLabel = totalFiles > 1 ? `Uploading 1 of ${totalFiles}` : 'Uploading image...';
+  updateProgressCard(progressEl, 8, initialLabel, `Preparing ${files[0].name}...`);
+
   try {
-    const url = await uploadFileToCloudinary(file, getProjectFolder(siteData.projects[projIndex].category));
-    siteData.projects[projIndex].images.push(url);
-    renderProjectsList();
-    toggleProjectEdit(projIndex);
-    showToast('☁️ Image uploaded to Cloudinary!', 'success');
+    if (!Array.isArray(proj.images)) {
+      proj.images = [];
+    }
+
+    for (let i = 0; i < totalFiles; i++) {
+      const file = files[i];
+      const url = await uploadFileToCloudinary(file, folder, (filePct) => {
+        const overall = Math.round(((i + (filePct / 100)) / totalFiles) * 100);
+        const label = totalFiles > 1 ? `Uploading ${i + 1} of ${totalFiles}` : 'Uploading image...';
+        updateProgressCard(progressEl, overall, label, file.name);
+      });
+      proj.images.push(url);
+      uploadedCount++;
+    }
+
+    updateProgressCard(progressEl, 100, 'Upload complete', `${uploadedCount} image(s) processed`);
+
+    // Update textarea and visual preview in place without re-rendering or closing card
+    const textarea = document.getElementById(`proj-gallery-textarea-${projIndex}`);
+    if (textarea) {
+      textarea.value = proj.images.join('\n');
+    }
+    const previewContainer = document.getElementById(`proj-gallery-preview-${projIndex}`);
+    if (previewContainer) {
+      previewContainer.innerHTML = renderGalleryPreviewsHtml(proj.images, projIndex);
+    }
+
+    // Changes remain in draft state until user clicks "Save Project"
+    showToast(uploadedCount > 1 ? `${uploadedCount} images uploaded successfully` : 'Image uploaded successfully', 'success');
   } catch (err) {
     console.error('Upload error:', err);
+    hideProgressCard(progressEl);
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
     input.value = '';
-    showLoading(false);
   }
 }
 
 async function uploadThumbnailToCloudinary(input, projIndex) {
   const file = input.files[0];
   if (!file) return;
-  showLoading(true);
+
+  ensureProjectsNormalized();
+  const proj = siteData.projects && siteData.projects[projIndex];
+  if (!proj) {
+    showToast('Project not found', 'error');
+    return;
+  }
+
+  const progressEl = document.getElementById(`proj-thumb-progress-${projIndex}`);
+  updateProgressCard(progressEl, 8, 'Uploading thumbnail...', file.name);
+
   try {
-    const url = await uploadFileToCloudinary(file, getProjectFolder(siteData.projects[projIndex].category));
-    siteData.projects[projIndex].thumbnail = url;
-    renderProjectsList();
-    toggleProjectEdit(projIndex);
-    showToast('☁️ Thumbnail uploaded!', 'success');
+    const url = await uploadFileToCloudinary(file, getProjectFolder(proj.category), (pct) => {
+      updateProgressCard(progressEl, pct, 'Uploading thumbnail...', file.name);
+    });
+    proj.thumbnail = url;
+    updateProgressCard(progressEl, 100, 'Upload complete', 'Thumbnail ready');
+
+    // Update thumbnail input and preview in place without re-rendering or closing card
+    const thumbInput = document.getElementById(`proj-thumb-input-${projIndex}`);
+    if (thumbInput) thumbInput.value = url;
+
+    const thumbPreview = document.getElementById(`proj-thumb-preview-${projIndex}`);
+    if (thumbPreview) {
+      thumbPreview.src = getImageUrl(url);
+      thumbPreview.style.display = 'block';
+    }
+
+    const cardThumb = document.querySelector(`#proj-card-${projIndex} .project-admin-thumb img`);
+    if (cardThumb) {
+      cardThumb.src = getImageUrl(url);
+      cardThumb.style.display = 'block';
+    }
+
+    showToast('Thumbnail uploaded successfully', 'success');
   } catch (err) {
+    console.error('Thumbnail upload error:', err);
+    hideProgressCard(progressEl);
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
     input.value = '';
-    showLoading(false);
   }
 }
 
 async function uploadFeaturedToCloudinary(input, cardIndex) {
   const file = input.files[0];
   if (!file) return;
-  showLoading(true);
+  const progressEl = document.getElementById(`featured-upload-progress-${cardIndex}`);
+  updateProgressCard(progressEl, 8, 'Uploading featured image...', file.name);
+
   try {
-    const url = await uploadFileToCloudinary(file, 'featured');
+    const url = await uploadFileToCloudinary(file, 'featured', (pct) => {
+      updateProgressCard(progressEl, pct, 'Uploading featured image...', file.name);
+    });
     siteData.home.featured.cards[cardIndex].image = url;
+    updateProgressCard(progressEl, 100, 'Upload complete', 'Image ready');
     populateHome();
-    showToast('☁️ Featured Image uploaded!', 'success');
+    showToast('Image uploaded successfully', 'success');
   } catch (err) {
+    hideProgressCard(progressEl);
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
     input.value = '';
-    showLoading(false);
   }
 }
 
 async function uploadPhilosophyImage(input) {
   const file = input.files[0];
   if (!file) return;
-  showLoading(true);
+  const progressEl = document.getElementById('phil-upload-progress');
+  updateProgressCard(progressEl, 8, 'Uploading philosophy image...', file.name);
+
   try {
-    const url = await uploadFileToCloudinary(file, 'philosophy');
+    const url = await uploadFileToCloudinary(file, 'philosophy', (pct) => {
+      updateProgressCard(progressEl, pct, 'Uploading philosophy image...', file.name);
+    });
     if (!siteData.home.philosophy) siteData.home.philosophy = {};
     siteData.home.philosophy.image = url;
     setValue('phil-image', url);
     const prev = document.getElementById('phil-image-preview');
     if (prev) prev.src = url;
-    showToast('☁️ Philosophy Image uploaded successfully!', 'success');
+    updateProgressCard(progressEl, 100, 'Upload complete', 'Image ready');
+    showToast('Image uploaded successfully', 'success');
   } catch (err) {
+    hideProgressCard(progressEl);
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
     input.value = '';
-    showLoading(false);
+  }
+}
+
+async function uploadAboutImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const progressEl = document.getElementById('about-upload-progress');
+  updateProgressCard(progressEl, 8, 'Uploading sketch photo...', file.name);
+
+  try {
+    const url = await uploadFileToCloudinary(file, 'about', (pct) => {
+      updateProgressCard(progressEl, pct, 'Uploading sketch photo...', file.name);
+    });
+    if (!siteData.about) siteData.about = {};
+    siteData.about.image = url;
+    setValue('about-image', url);
+    const prev = document.getElementById('about-image-preview');
+    if (prev) prev.src = url;
+    updateProgressCard(progressEl, 100, 'Upload complete', 'Photo ready');
+    showToast('Photo uploaded successfully', 'success');
+  } catch (err) {
+    hideProgressCard(progressEl);
+    showToast('Upload failed: ' + err.message, 'error');
+  } finally {
+    input.value = '';
   }
 }
 
@@ -1207,28 +1692,33 @@ function getProjectFolder(category) {
 async function uploadFounderImage(input) {
   const file = input.files[0];
   if (!file) return;
-  showLoading(true);
+  const progressEl = document.getElementById('founder-upload-progress');
+  updateProgressCard(progressEl, 8, 'Uploading portrait...', file.name);
+
   try {
-    const url = await uploadFileToCloudinary(file, 'founder');
+    const url = await uploadFileToCloudinary(file, 'founder', (pct) => {
+      updateProgressCard(progressEl, pct, 'Uploading portrait...', file.name);
+    });
     if (!siteData.about) siteData.about = {};
     if (!siteData.about.founder) siteData.about.founder = {};
     siteData.about.founder.image = url;
     setValue('founder-image', url);
     const prev = document.getElementById('founder-image-preview');
     if (prev) prev.src = url;
-    showToast('☁️ Founder photo uploaded successfully!', 'success');
+    updateProgressCard(progressEl, 100, 'Upload complete', 'Photo ready');
+    showToast('Photo uploaded successfully', 'success');
   } catch (err) {
+    hideProgressCard(progressEl);
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
     input.value = '';
-    showLoading(false);
   }
 }
 
 async function uploadTeamMemberImage(input, index) {
   const file = input.files[0];
   if (!file) return;
-  showLoading(true);
+
   try {
     const url = await uploadFileToCloudinary(file, 'team');
     if (!siteData.about) siteData.about = {};
@@ -1238,12 +1728,11 @@ async function uploadTeamMemberImage(input, index) {
       siteData.about.team.members[index].image = url;
     }
     renderTeamMembers(siteData.about.team.members);
-    showToast('☁️ Team member photo uploaded!', 'success');
+    showToast('Photo uploaded successfully', 'success');
   } catch (err) {
     showToast('Upload failed: ' + err.message, 'error');
   } finally {
     input.value = '';
-    showLoading(false);
   }
 }
 
@@ -1739,7 +2228,7 @@ async function saveSection(section) {
     // Publish to HTML to make initial loading INSTANT for the website!
     await fetch(`${API}/publish`, { method: 'POST' });
 
-    showToast('✓ ' + section.charAt(0).toUpperCase() + section.slice(1) + ' saved! Website updated instantly.', 'success');
+    showToast(section.charAt(0).toUpperCase() + section.slice(1) + ' saved successfully', 'success');
     updateDashboard();
   } catch (err) {
     showToast('Save failed: ' + err.message, 'error');
@@ -1749,6 +2238,9 @@ async function saveSection(section) {
 
 function collectFormData(section) {
   switch (section) {
+    case 'projects':
+      if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
+      break;
     case 'home':
       siteData.home.hero.badge = getValue('hero-badge');
       siteData.home.hero.title_line1 = getValue('hero-title');
@@ -1832,12 +2324,14 @@ function collectFormData(section) {
 
 function collectAllFormData() {
   ['home', 'about', 'services', 'contact', 'footer', 'site'].forEach(s => collectFormData(s));
+  if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
 }
 
 // ═══════ PUBLISH (Firebase → HTML) ═══════
 async function publishSite() {
   collectAllFormData();
-  showLoading(true);
+  if (typeof ensureProjectsNormalized === 'function') ensureProjectsNormalized();
+  showLoading(true, 'Publishing changes...');
   try {
     // Save to Firebase first
     try {
@@ -1857,7 +2351,7 @@ async function publishSite() {
     const res = await fetch(`${API}/publish`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast('🚀 Published! Firebase + HTML updated!', 'success');
+      showToast('Website published successfully', 'success');
     } else {
       showToast('Publish failed: ' + (data.error || 'Unknown'), 'error');
     }
@@ -1891,12 +2385,16 @@ function escapeAttr(str) {
   if (str === null || str === undefined) return '';
   return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
-function showLoading(show) {
-  document.getElementById('loadingOverlay').classList.toggle('show', show);
+function showLoading(show, text = 'Loading...') {
+  const overlay = document.getElementById('loadingOverlay');
+  const textEl = document.getElementById('loadingOverlayText');
+  if (textEl && text) textEl.textContent = text;
+  if (overlay) overlay.classList.toggle('show', show);
 }
 function showToast(message, type = '') {
   const toast = document.getElementById('toast');
+  if (!toast) return;
   toast.textContent = message;
   toast.className = 'toast ' + type + ' show';
-  setTimeout(() => toast.classList.remove('show'), 3500);
+  setTimeout(() => toast.classList.remove('show'), 3000);
 }
